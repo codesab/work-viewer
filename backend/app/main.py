@@ -37,7 +37,7 @@ async def validate_project(project_key: str):
             "exists": True,
             "id": project.id,
             "name": project.name,
-            "projectCategory": project.projectCategory.name if project.projectCategory else None
+            "projectCategory": getattr(project, 'projectCategory', {}).get('name', None)
         }
     except Exception as e:
         raise HTTPException(
