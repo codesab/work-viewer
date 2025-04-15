@@ -71,3 +71,39 @@ async def validate_project(project_key: str):
             status_code=404 if "Project not found" in str(e) else 500,
             detail=str(e)
         )
+
+@app.get("/api/issues/{project_key}")
+async def get_issues(
+    project_key: str,
+    issue_type: str = "Story",
+    page: int = 1,
+    size: int = 10,
+    sort_by: str = "key",
+    sort_order: str = "asc"
+):
+    jira = get_jira_client()
+    try:
+        start_at = (page - 1) * size
+        jql = f'project = {project_key} AND issuetype = "{issue_type}" ORDER BY {sort_by} {sort_order}'
+        issues = jira.search_issues(jql, startAt=start_at, maxResults=size)
+        
+        return {
+            "items": [
+                {
+                    "key": issue.key,
+                    "title": issue.fields.summary,
+                    "assignee": issue.fields.assignee.displayName if issue.fields.assignee else None,
+                    "reporter": issue.fields.reporter.displayName,
+                    "issue_type": issue.fields.issuetype.name
+                }
+                for issue in issues
+            ],
+            "total": issues.total,
+            "page": page,
+            "size": size
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )

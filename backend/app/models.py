@@ -16,3 +16,15 @@ class EngineerTickets(BaseModel):
 class User(BaseModel):
     username: str
     email: str
+class JiraIssue(BaseModel):
+    key: str
+    title: str
+    assignee: Optional[str] = None
+    reporter: str
+    issue_type: str
+
+class PaginatedResponse(BaseModel):
+    items: List[JiraIssue]
+    total: int
+    page: int
+    size: int
