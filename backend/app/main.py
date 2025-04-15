@@ -22,20 +22,25 @@ async def root():
     return {"message": "JIRA Dashboard API"}
 
 @app.get("/api/validate-project/{project_key}")
-async def validate_project(project_key: str, auth: tuple = Depends(get_jira_auth)):
-    url = f"{settings.JIRA_SERVER}/rest/api/2/projectvalidate/key"
+async def validate_project(project_key: str):
+    from jira import JIRA
     
     try:
-        response = requests.get(
-            url,
-            params={"key": project_key},
-            auth=auth,
-            headers={"Accept": "application/json"}
+        jira = JIRA(
+            server=settings.JIRA_SERVER,
+            basic_auth=(settings.JIRA_EMAIL, settings.JIRA_API_TOKEN)
         )
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
+        
+        # Get project to validate it exists
+        project = jira.project(project_key)
+        return {
+            "exists": True,
+            "id": project.id,
+            "name": project.name,
+            "projectCategory": project.projectCategory.name if project.projectCategory else None
+        }
+    except Exception as e:
         raise HTTPException(
-            status_code=response.status_code if hasattr(response, 'status_code') else 500,
+            status_code=404 if "Project not found" in str(e) else 500,
             detail=str(e)
         )
