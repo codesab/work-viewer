@@ -7,11 +7,11 @@ const { Header, Content } = Layout;
 
 const App: React.FC = () => {
   return (
-    <Layout>
+    <Layout style={{ minHeight: '100vh' }}>
       <Header style={{ color: 'white' }}>
         JIRA Dashboard
       </Header>
-      <Content>
+      <Content style={{ padding: '0 50px', marginTop: 24 }}>
         <Issues />
       </Content>
     </Layout>
