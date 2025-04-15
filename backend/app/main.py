@@ -42,8 +42,8 @@ async def validate_auth() -> Dict:
         return {
             "authenticated": True,
             "user": {
-                "name": user.displayName,
-                "email": user.emailAddress
+                "name": user.get('displayName', 'Unknown'),
+                "email": user.get('emailAddress', 'Unknown')
             }
         }
     except HTTPException as he:
