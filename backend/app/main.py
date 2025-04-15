@@ -9,7 +9,11 @@ app = FastAPI(title="JIRA Dashboard API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://0.0.0.0:3000"],
+    allow_origins=[
+        "http://0.0.0.0:3000",
+        "https://416cf27b-b0f0-4827-ba72-6c4f26038c96-00-2z1igbk4vduc7.pike.replit.dev",
+        "https://416cf27b-b0f0-4827-ba72-6c4f26038c96-00-2z1igbk4vduc7.pike.replit.dev:3000"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
