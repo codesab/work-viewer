@@ -33,7 +33,7 @@ const Issues: React.FC = () => {
     setLoading(true);
     try {
       const response = await fetch(
-        `https://0.0.0.0:5000/api/issues/${projectKey}?issue_type=${issueType}&page=${page}&size=${pageSize}`
+        `http://0.0.0.0:5000/api/issues/${projectKey}?issue_type=${issueType}&page=${page}&size=${pageSize}`
       );
       const data = await response.json();
       if (response.ok) {
