@@ -27,7 +27,7 @@ const Issues: React.FC = () => {
   const [issueType, setIssueType] = useState<string>('Story');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const projectKey = "PH";
+  const projectKey = "SHER";
 
   const fetchIssues = async () => {
     setLoading(true);
