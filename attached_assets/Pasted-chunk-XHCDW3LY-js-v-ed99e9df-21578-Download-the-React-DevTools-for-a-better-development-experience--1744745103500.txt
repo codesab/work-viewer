@@ -1,0 +1,42 @@
+chunk-XHCDW3LY.js?v=ed99e9df:21578 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+Issues.tsx:35 Mixed Content: The page at 'https://416cf27b-b0f0-4827-ba72-6c4f26038c96-00-2z1igbk4vduc7.pike.replit.dev:3000/' was loaded over HTTPS, but requested an insecure resource 'http://0.0.0.0:5000/api/issues/PH?issue_type=Story&page=1&size=10'. This request has been blocked; the content must be served over HTTPS.
+fetchIssues @ Issues.tsx:35
+(anonymous) @ Issues.tsx:53
+commitHookEffectListMount @ chunk-XHCDW3LY.js?v=ed99e9df:16934
+commitPassiveMountOnFiber @ chunk-XHCDW3LY.js?v=ed99e9df:18182
+commitPassiveMountEffects_complete @ chunk-XHCDW3LY.js?v=ed99e9df:18155
+commitPassiveMountEffects_begin @ chunk-XHCDW3LY.js?v=ed99e9df:18145
+commitPassiveMountEffects @ chunk-XHCDW3LY.js?v=ed99e9df:18135
+flushPassiveEffectsImpl @ chunk-XHCDW3LY.js?v=ed99e9df:19516
+flushPassiveEffects @ chunk-XHCDW3LY.js?v=ed99e9df:19473
+performSyncWorkOnRoot @ chunk-XHCDW3LY.js?v=ed99e9df:18894
+flushSyncCallbacks @ chunk-XHCDW3LY.js?v=ed99e9df:9133
+commitRootImpl @ chunk-XHCDW3LY.js?v=ed99e9df:19458
+commitRoot @ chunk-XHCDW3LY.js?v=ed99e9df:19303
+finishConcurrentRender @ chunk-XHCDW3LY.js?v=ed99e9df:18831
+performConcurrentWorkOnRoot @ chunk-XHCDW3LY.js?v=ed99e9df:18744
+workLoop @ chunk-XHCDW3LY.js?v=ed99e9df:195
+flushWork @ chunk-XHCDW3LY.js?v=ed99e9df:174
+performWorkUntilDeadline @ chunk-XHCDW3LY.js?v=ed99e9df:382
+Issues.tsx:35 Mixed Content: The page at 'https://416cf27b-b0f0-4827-ba72-6c4f26038c96-00-2z1igbk4vduc7.pike.replit.dev:3000/' was loaded over HTTPS, but requested an insecure resource 'http://0.0.0.0:5000/api/issues/PH?issue_type=Story&page=1&size=10'. This request has been blocked; the content must be served over HTTPS.
+fetchIssues @ Issues.tsx:35
+(anonymous) @ Issues.tsx:53
+commitHookEffectListMount @ chunk-XHCDW3LY.js?v=ed99e9df:16934
+invokePassiveEffectMountInDEV @ chunk-XHCDW3LY.js?v=ed99e9df:18350
+invokeEffectsInDev @ chunk-XHCDW3LY.js?v=ed99e9df:19727
+commitDoubleInvokeEffectsInDEV @ chunk-XHCDW3LY.js?v=ed99e9df:19712
+flushPassiveEffectsImpl @ chunk-XHCDW3LY.js?v=ed99e9df:19529
+flushPassiveEffects @ chunk-XHCDW3LY.js?v=ed99e9df:19473
+performSyncWorkOnRoot @ chunk-XHCDW3LY.js?v=ed99e9df:18894
+flushSyncCallbacks @ chunk-XHCDW3LY.js?v=ed99e9df:9133
+commitRootImpl @ chunk-XHCDW3LY.js?v=ed99e9df:19458
+commitRoot @ chunk-XHCDW3LY.js?v=ed99e9df:19303
+finishConcurrentRender @ chunk-XHCDW3LY.js?v=ed99e9df:18831
+performConcurrentWorkOnRoot @ chunk-XHCDW3LY.js?v=ed99e9df:18744
+workLoop @ chunk-XHCDW3LY.js?v=ed99e9df:195
+flushWork @ chunk-XHCDW3LY.js?v=ed99e9df:174
+performWorkUntilDeadline @ chunk-XHCDW3LY.js?v=ed99e9df:382
+favicon.ico:1 
+            
+            
+           GET https://416cf27b-b0f0-4827-ba72-6c4f26038c96-00-2z1igbk4vduc7.pike.replit.dev:3000/favicon.ico 404 (Not Found)
