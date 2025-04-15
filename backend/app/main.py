@@ -1,8 +1,9 @@
 
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-import requests
+from jira import JIRA
 from .config import settings
+from typing import Dict
 
 app = FastAPI(title="JIRA Dashboard API")
 
@@ -14,24 +15,50 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-def get_jira_auth():
-    return (settings.JIRA_EMAIL, settings.JIRA_API_TOKEN)
-
-@app.get("/")
-async def root():
-    return {"message": "JIRA Dashboard API"}
-
-@app.get("/api/validate-project/{project_key}")
-async def validate_project(project_key: str):
-    from jira import JIRA
-    
+def get_jira_client() -> JIRA:
     try:
         jira = JIRA(
             server=settings.JIRA_SERVER,
             basic_auth=(settings.JIRA_EMAIL, settings.JIRA_API_TOKEN)
         )
-        
-        # Get project to validate it exists
+        # Test authentication by making a simple API call
+        jira.myself()
+        return jira
+    except Exception as e:
+        raise HTTPException(
+            status_code=401,
+            detail=f"JIRA authentication failed: {str(e)}"
+        )
+
+@app.get("/")
+async def root():
+    return {"message": "JIRA Dashboard API"}
+
+@app.get("/api/validate-auth")
+async def validate_auth() -> Dict:
+    try:
+        jira = get_jira_client()
+        user = jira.myself()
+        return {
+            "authenticated": True,
+            "user": {
+                "name": user.displayName,
+                "email": user.emailAddress
+            }
+        }
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Unexpected error during authentication: {str(e)}"
+        )
+
+@app.get("/api/validate-project/{project_key}")
+async def validate_project(project_key: str):
+    jira = get_jira_client()  # This will handle authentication first
+    
+    try:
         project = jira.project(project_key)
         return {
             "exists": True,

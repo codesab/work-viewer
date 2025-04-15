@@ -10,19 +10,25 @@ const Issues: React.FC = () => {
   const projectKey = "PH";
 
   useEffect(() => {
-    const validateProject = async () => {
+    const validateAuth = async () => {
       try {
-        const response = await fetch(`http://0.0.0.0:5000/api/validate-project/${projectKey}`);
+        const response = await fetch('http://0.0.0.0:5000/api/validate-auth');
         const data = await response.json();
-        setValidationResult(data);
-        setError(null);
-      } catch (err) {
-        setError("Failed to validate project");
+        
+        if (data.authenticated) {
+          // After successful authentication, validate project
+          const projectResponse = await fetch(`http://0.0.0.0:5000/api/validate-project/${projectKey}`);
+          const projectData = await projectResponse.json();
+          setValidationResult(projectData);
+          setError(null);
+        }
+      } catch (err: any) {
+        setError(err.message || "Authentication failed");
         setValidationResult(null);
       }
     };
 
-    validateProject();
+    validateAuth();
   }, []);
 
   return (
