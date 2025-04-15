@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Layout } from 'antd';
+import Issues from './pages/Issues';
 
 const { Header, Content } = Layout;
 
@@ -10,8 +11,8 @@ const App: React.FC = () => {
       <Header style={{ color: 'white' }}>
         JIRA Dashboard
       </Header>
-      <Content style={{ padding: '20px' }}>
-        Dashboard Content
+      <Content>
+        <Issues />
       </Content>
     </Layout>
   );
