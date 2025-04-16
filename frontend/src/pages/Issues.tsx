@@ -27,7 +27,7 @@ const Issues: React.FC = () => {
   const [issueType, setIssueType] = useState<string>('Story');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const projectKey = "BPS";
+  const projectKey = "SHER";
 
   const fetchIssues = async () => {
     setLoading(true);
@@ -60,7 +60,7 @@ const Issues: React.FC = () => {
       sorter: true,
     },
     {
-      title: 'Title',
+      title: 'Summary',
       dataIndex: 'title',
     },
     {
@@ -77,7 +77,7 @@ const Issues: React.FC = () => {
   return (
     <div style={{ padding: '24px' }}>
       <Space direction="vertical" style={{ width: '100%' }} size="large">
-        <Title level={2}>Project Issues</Title>
+        <Title level={2}>Product and Engineering Backlog</Title>
         
         <Space>
           <span>Issue Type:</span>
