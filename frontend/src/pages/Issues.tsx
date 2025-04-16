@@ -32,7 +32,7 @@ const Issues: React.FC = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchText, setSearchText] = useState('');
-  const projectKey = "SHER";
+  const projectKey = "PHNX";
 
   const fetchIssues = async () => {
     setLoading(true);
