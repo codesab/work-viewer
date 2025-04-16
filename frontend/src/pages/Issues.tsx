@@ -28,7 +28,8 @@ const Issues: React.FC = () => {
   const [issues, setIssues] = useState<PaginatedResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [issueType, setIssueType] = useState<string>('Story');
+  const [selectedIssueTypes, setSelectedIssueTypes] = useState<string[]>(['Story']);
+  const issueTypes = ['Story', 'Task', 'Bug', 'Epic'];
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchText, setSearchText] = useState('');
@@ -58,7 +59,7 @@ const Issues: React.FC = () => {
     setLoading(true);
     try {
       const response = await fetch(
-        `https://${window.location.hostname}/api/issues/${projectKey}?issue_type=${issueType}&page=${page}&size=${pageSize}`
+        `https://${window.location.hostname}/api/issues/${projectKey}?issue_type=${selectedIssueTypes.join(',')}&page=${page}&size=${pageSize}`
       );
       const data = await response.json();
       if (response.ok) {
@@ -76,7 +77,7 @@ const Issues: React.FC = () => {
 
   useEffect(() => {
     fetchIssues();
-  }, [issueType, page, pageSize]);
+  }, [selectedIssueTypes, page, pageSize]);
 
   const filteredIssues = issues?.items.filter(issue => {
     const searchLower = searchText.toLowerCase();
@@ -139,13 +140,13 @@ const Issues: React.FC = () => {
             <span>Issue Type:</span>
             <Space>
               <Select
-                value={issueType}
-                onChange={setIssueType}
-                style={{ width: 120 }}
-                options={[
-                  { value: 'Story', label: 'Story' },
-                  { value: 'Task', label: 'Task' },
-                ]}
+                mode="multiple"
+                placeholder="Filter by issue type"
+                value={selectedIssueTypes}
+                onChange={setSelectedIssueTypes}
+                style={{ width: 200 }}
+                options={issueTypes.map(type => ({ value: type, label: type }))}
+                allowClear
               />
               <Select
                 mode="multiple"
