@@ -32,7 +32,27 @@ const Issues: React.FC = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchText, setSearchText] = useState('');
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [availableStatuses, setAvailableStatuses] = useState<string[]>([]);
   const projectKey = "PHNX";
+
+  const fetchStatuses = async () => {
+    try {
+      const response = await fetch(
+        `https://${window.location.hostname}/api/statuses/${projectKey}`
+      );
+      const data = await response.json();
+      if (response.ok) {
+        setAvailableStatuses(data.statuses);
+      }
+    } catch (err) {
+      console.error("Failed to fetch statuses:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchStatuses();
+  }, []);
 
   const fetchIssues = async () => {
     setLoading(true);
@@ -60,10 +80,11 @@ const Issues: React.FC = () => {
 
   const filteredIssues = issues?.items.filter(issue => {
     const searchLower = searchText.toLowerCase();
-    return (
+    const matchesSearch = 
       issue.key.toLowerCase().includes(searchLower) ||
-      issue.title.toLowerCase().includes(searchLower)
-    );
+      issue.title.toLowerCase().includes(searchLower);
+    const matchesStatus = selectedStatuses.length === 0 || selectedStatuses.includes(issue.status);
+    return matchesSearch && matchesStatus;
   });
 
   const columns: TableProps<JiraIssue>['columns'] = [
@@ -116,15 +137,26 @@ const Issues: React.FC = () => {
           
           <Space>
             <span>Issue Type:</span>
-            <Select
-              value={issueType}
-              onChange={setIssueType}
-              style={{ width: 120 }}
-              options={[
-                { value: 'Story', label: 'Story' },
-                { value: 'Task', label: 'Task' },
-              ]}
-            />
+            <Space>
+              <Select
+                value={issueType}
+                onChange={setIssueType}
+                style={{ width: 120 }}
+                options={[
+                  { value: 'Story', label: 'Story' },
+                  { value: 'Task', label: 'Task' },
+                ]}
+              />
+              <Select
+                mode="multiple"
+                placeholder="Filter by status"
+                value={selectedStatuses}
+                onChange={setSelectedStatuses}
+                style={{ width: 200 }}
+                options={availableStatuses.map(status => ({ value: status, label: status }))}
+                allowClear
+              />
+            </Space>
           </Space>
         </div>
 

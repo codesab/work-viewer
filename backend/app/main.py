@@ -114,3 +114,17 @@ async def get_issues(
             status_code=500,
             detail=str(e)
         )
+
+@app.get("/api/statuses/{project_key}")
+async def get_statuses(project_key: str):
+    jira = get_jira_client()
+    try:
+        jql = f'project = {project_key}'
+        issues = jira.search_issues(jql, maxResults=1000)
+        statuses = sorted(list(set(issue.fields.status.name for issue in issues)))
+        return {"statuses": statuses}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
