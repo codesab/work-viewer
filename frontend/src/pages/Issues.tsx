@@ -125,7 +125,7 @@ const Issues: React.FC = () => {
   return (
     <div style={{ padding: '24px' }}>
       <Space direction="vertical" style={{ width: '100%' }} size="large">
-        <Title level={2}>Product and Engineering Backlog</Title>
+        <Title level={2}>Product and Engineering Backlog 🚀</Title>
         
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Search
