@@ -22,6 +22,9 @@ class JiraIssue(BaseModel):
     assignee: Optional[str] = None
     reporter: str
     issue_type: str
+    status: str
+    start_date: Optional[str] = None
+    due_date: Optional[str] = None
 
 class PaginatedResponse(BaseModel):
     items: List[JiraIssue]

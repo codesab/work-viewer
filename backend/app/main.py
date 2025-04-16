@@ -98,7 +98,10 @@ async def get_issues(
                     "title": issue.fields.summary,
                     "assignee": issue.fields.assignee.displayName if issue.fields.assignee else None,
                     "reporter": issue.fields.reporter.displayName,
-                    "issue_type": issue.fields.issuetype.name
+                    "issue_type": issue.fields.issuetype.name,
+                    "status": issue.fields.status.name,
+                    "start_date": issue.fields.customfield_10015 if hasattr(issue.fields, 'customfield_10015') else None,
+                    "due_date": str(issue.fields.duedate) if issue.fields.duedate else None
                 }
                 for issue in issues
             ],
