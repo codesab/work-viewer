@@ -1,20 +1,12 @@
 
 import React from 'react';
-import { Layout } from 'antd';
-import Issues from './pages/Issues';
+import Issues from './pages/Issues'; // Adjust path if needed
 
-const { Header, Content } = Layout;
-
-const App: React.FC = () => {
+const App = ({ args }) => {
   return (
-    <Layout>
-      <Header style={{ color: 'white' }}>
-        
-      </Header>
-      <Content>
-        <Issues />
-      </Content>
-    </Layout>
+    <div>
+      <Issues basePath={args.basePath} history={args.history} />
+    </div>
   );
 };
 
