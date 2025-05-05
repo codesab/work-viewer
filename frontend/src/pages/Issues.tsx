@@ -27,22 +27,9 @@ const Issues: React.FC = () => {
   const [searchText, setSearchText] = useState("");
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [availableStatuses, setAvailableStatuses] = useState<string[]>([]);
-  const [calendarEvents, setCalendarEvents] = useState<
-    {
-      type:
-        | "success"
-        | "processing"
-        | "warning"
-        | "error"
-        | "default"
-        | undefined;
-      content: string;
-      date: string;
-      key: string;
-    }[]
-  >([]);
+  const [calendarEvents, setCalendarEvents] = useState<JiraIssue[]>([]);
   const [currentMonth, setCurrentMonth] = useState<string>(
-    dayjs().format("YYYY-MM"),
+    dayjs().format("YYYY-MM")
   ); // State for current month
   const projectKey = "PHNX";
   const [selectedIssue, setSelectedIssue] = useState<JiraIssue | null>(null);
@@ -55,7 +42,7 @@ const Issues: React.FC = () => {
   const fetchStatuses = async () => {
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_JIRA_SERVICE_URL}/api/statuses/${projectKey}`,
+        `${import.meta.env.VITE_JIRA_SERVICE_URL}/api/statuses/${projectKey}`
       );
       const data = await response.json();
       if (response.ok) {
@@ -72,7 +59,9 @@ const Issues: React.FC = () => {
 
   const fetchIssues = async (month?: string) => {
     setLoading(true);
-    let apiUrl = `${import.meta.env.VITE_JIRA_SERVICE_URL}/api/issues/${projectKey}?issue_type=${issueType}&page=${page}&size=${pageSize}`;
+    let apiUrl = `${
+      import.meta.env.VITE_JIRA_SERVICE_URL
+    }/api/issues/${projectKey}?issue_type=${issueType}&page=${page}&size=${pageSize}`;
     if (month) {
       apiUrl += `&month=${month}`; // Add the month as a query parameter
     }
@@ -98,43 +87,23 @@ const Issues: React.FC = () => {
 
   useEffect(() => {
     if (issues?.items) {
-      const events = issues.items.reduce(
-        (acc, issue) => {
-          const eventDate = issue.due_date || issue.start_date;
-          if (
-            eventDate &&
-            dayjs(eventDate).format("YYYY-MM") === currentMonth
-          ) {
-            // Only include events for the current month
-            acc.push({
-              type: "success",
-              content: issue.title,
-              date: eventDate,
-              ...issue,
-            });
-          }
-          return acc;
-        },
-        [] as {
-          type:
-            | "success"
-            | "processing"
-            | "warning"
-            | "error"
-            | "default"
-            | undefined;
-          content: string;
-          date: string;
-          key: string;
-        }[],
-      );
+      const events = issues.items.reduce((acc, issue) => {
+        const eventDate = issue.due_date || issue.start_date;
+        if (eventDate && dayjs(eventDate).format("YYYY-MM") === currentMonth) {
+          // Only include events for the current month
+          acc.push({
+            ...issue,
+          });
+        }
+        return acc;
+      }, [] as JiraIssue[]);
       setCalendarEvents(events);
     }
   }, [issues, currentMonth]);
 
-  const getListData = (value: dayjs.Dayjs) => {
+  const getListData = (value: dayjs.Dayjs): JiraIssue[] => {
     const dateString = value.format("YYYY-MM-DD");
-    return calendarEvents.filter((item) => item.date === dateString);
+    return calendarEvents.filter((item) => item.due_date === dateString);
   };
 
   const MAX_BADGES_TO_SHOW = 1;
@@ -152,7 +121,7 @@ const Issues: React.FC = () => {
       <div>
         {visibleBadges.map((item) => (
           <div
-            key={item.content}
+            key={item.title}
             style={{ marginBottom: 2 }}
             onClick={() => {
               if (item) {
@@ -161,7 +130,7 @@ const Issues: React.FC = () => {
               }
             }}
           >
-            <Badge status={item.type} text={item.content} />
+            <Badge text={item.title} />
           </div>
         ))}
         {remainingCount > 0 && (
@@ -259,8 +228,10 @@ const Issues: React.FC = () => {
               {selectedIssue.assignee || "Unassigned"}
             </Descriptions.Item>
             <Descriptions.Item label="Description">
-              {`${selectedIssue.description?.substring(0, 250)} .. (Truncated for brevity)` ||
-                "--"}
+              {`${selectedIssue.description?.substring(
+                0,
+                250
+              )} .. (Truncated for brevity)` || "--"}
             </Descriptions.Item>
             <Descriptions.Item label="Due Date">
               {selectedIssue.due_date || "--"}
@@ -280,8 +251,8 @@ const Issues: React.FC = () => {
                   selectedIssue.status === "Done"
                     ? "green"
                     : selectedIssue.status === "In Progress"
-                      ? "blue"
-                      : "gray"
+                    ? "blue"
+                    : "gray"
                 }
               >
                 {selectedIssue.status}
@@ -291,7 +262,11 @@ const Issues: React.FC = () => {
         )}
       </Modal>
       <Modal
-        title={selectedDateForIssues ? `Issues on ${selectedDateForIssues.format('YYYY-MM-DD')}` : 'Issues'}
+        title={
+          selectedDateForIssues
+            ? `Issues on ${selectedDateForIssues.format("YYYY-MM-DD")}`
+            : "Issues"
+        }
         open={isAllIssuesModalVisible}
         onOk={() => setIsAllIssuesModalVisible(false)}
         onCancel={() => setIsAllIssuesModalVisible(false)}
@@ -300,24 +275,8 @@ const Issues: React.FC = () => {
           <Space direction="vertical">
             {allIssuesForDate.map((issue) => (
               <div key={issue.key}>
-                <Typography.Text strong>{issue.key}:</Typography.Text> {issue.title}
-              </div>
-            ))}
-          </Space>
-        ) : (
-          <Typography.Text>No issues on this date.</Typography.Text>
-        )}
-      </Modal><Modal
-        title={selectedDateForIssues ? `Issues on ${selectedDateForIssues.format('YYYY-MM-DD')}` : 'Issues'}
-        open={isAllIssuesModalVisible}
-        onOk={() => setIsAllIssuesModalVisible(false)}
-        onCancel={() => setIsAllIssuesModalVisible(false)}
-      >
-        {allIssuesForDate.length > 0 ? (
-          <Space direction="vertical">
-            {allIssuesForDate.map((issue) => (
-              <div key={issue.key}>
-                <Typography.Text strong>{issue.key}:</Typography.Text> {issue.title}
+                <Typography.Text strong>{issue.key}:</Typography.Text>{" "}
+                {issue.title}
               </div>
             ))}
           </Space>

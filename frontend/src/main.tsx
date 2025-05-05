@@ -1,39 +1,20 @@
+import('./bootstrap').then(({ mount }) => {
+  const rootElement = document.getElementById('root');
 
-// import React from 'react'
-// import ReactDOM from 'react-dom/client'
-// import App from './App'
-// import { ConfigProvider } from 'antd'
+  if (rootElement) {
+    mount(rootElement, {
+      onNavigate: (location: { pathname: string }) => {
+        console.log('Workviewer MFE navigated', location);
+      },
+      defaultHistory: window.__POWERED_BY_QIANKUN__ ? undefined : createBrowserHistory(),
+      initialPath: window.location.pathname,
+    });
+  }
+});
 
-// ReactDOM.createRoot(document.getElementById('root')!).render(
-//   <React.StrictMode>
-//     <ConfigProvider>
-//       <App />
-//     </ConfigProvider>
-//   </React.StrictMode>,
-// )
-
-import('./bootstrap')
-  .then(({ mount }) => {
-    const rootElement = document.getElementById('root'); // Or your main app container ID
-
-    if (rootElement) {
-      mount(rootElement, {
-        onNavigate: (location) => {
-          // Optional: Handle navigation events from the container
-          console.log('Workviewer MFE navigated', location);
-        },
-        defaultHistory: window.__POWERED_BY_QIANKUN__ ? undefined : createBrowserHistory(),
-        initialPath: window.location.pathname,
-      });
-    }
-  });
-
-import('./bootstrap')
-  .then(({ unmount }) => {
-    // Optional: You might need to expose the unmount function globally
-    // or handle unmounting in a specific lifecycle within your container.
-    window.workviewermfe_unmount = unmount;
-  });
+import('./bootstrap').then(({ unmount }) => {
+  window.workviewermfe_unmount = unmount;
+});
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
@@ -45,12 +26,6 @@ if (import.meta.env.NODE_ENV === 'development' && !window.__POWERED_BY_QIANKUN__
   if (rootElement) {
     const root = ReactDOM.createRoot(rootElement);
     const history = createBrowserHistory();
-    const args = {
-      history,
-      basePath: '',
-    };
-    root.render(
-        <App args={args} />
-    );
+    root.render(<App args={{ history, basePath: '' }} />);
   }
 }

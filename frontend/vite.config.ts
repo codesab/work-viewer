@@ -15,6 +15,7 @@ export default defineConfig({
         // You can expose other modules/components here if needed
       },
       shared: ["react", "react-dom"], // List your shared dependencies
+      dev: true
     }),
   ],
   server: {
