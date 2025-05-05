@@ -55,7 +55,7 @@ const Issues: React.FC = () => {
   const fetchStatuses = async () => {
     try {
       const response = await fetch(
-        `https://${window.location.hostname}/api/statuses/${projectKey}`,
+        `${import.meta.env.VITE_JIRA_SERVICE_URL}/api/statuses/${projectKey}`,
       );
       const data = await response.json();
       if (response.ok) {
@@ -72,7 +72,7 @@ const Issues: React.FC = () => {
 
   const fetchIssues = async (month?: string) => {
     setLoading(true);
-    let apiUrl = `https://${window.location.hostname}/api/issues/${projectKey}?issue_type=${issueType}&page=${page}&size=${pageSize}`;
+    let apiUrl = `${import.meta.env.VITE_JIRA_SERVICE_URL}/api/issues/${projectKey}?issue_type=${issueType}&page=${page}&size=${pageSize}`;
     if (month) {
       apiUrl += `&month=${month}`; // Add the month as a query parameter
     }

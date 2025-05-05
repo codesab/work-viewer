@@ -6,6 +6,7 @@ from typing import Dict, Optional
 import datetime
 
 app = FastAPI(title="JIRA Dashboard API")
+visibility_custom_id = "cf[11357]"  # Replace with the actual ID
 
 app.add_middleware(
     CORSMiddleware,
@@ -90,13 +91,19 @@ async def get_issues(project_key: str,
     jira = get_jira_client()
     try:
         start_at = (page - 1) * size
-        jql_parts = [f'project = {project_key}', f'issuetype = "{issue_type}"']
+        jql_parts = [
+            f'project = {project_key}', f'issuetype = "{issue_type}"',
+            f'{visibility_custom_id} = "Organisation"'
+        ]
         if month:
             try:
                 year, month_num = map(int, month.split('-'))
-                first_day = datetime.datetime(year, month_num, 1).strftime('%Y-%m-%d')
-                next_month = datetime.datetime(year, month_num, 1) + datetime.timedelta(days=32)
-                last_day = next_month.replace(day=1) - datetime.timedelta(days=1)
+                first_day = datetime.datetime(year, month_num,
+                                              1).strftime('%Y-%m-%d')
+                next_month = datetime.datetime(year, month_num,
+                                               1) + datetime.timedelta(days=32)
+                last_day = next_month.replace(day=1) - datetime.timedelta(
+                    days=1)
                 last_day_str = last_day.strftime('%Y-%m-%d')
                 jql_parts.append(
                     f'dueDate >= "{first_day}" AND dueDate <= "{last_day_str}"'
