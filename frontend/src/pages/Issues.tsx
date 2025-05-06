@@ -17,7 +17,12 @@ import { JiraIssue, PaginatedResponse } from "../types";
 const { Title } = Typography;
 const { Search } = Input;
 
-const Issues: React.FC = () => {
+interface IssuesProps {
+  basePath: string;
+  history: any; // Ideally use 'History' from the 'history' package
+}
+
+const Issues: React.FC<IssuesProps> = ({ basePath, history }) => {
   const [issues, setIssues] = useState<PaginatedResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -42,7 +47,7 @@ const Issues: React.FC = () => {
   const fetchStatuses = async () => {
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_JIRA_SERVICE_URL}/api/statuses/${projectKey}`
+        `${process.env.REACT_APP_JIRA_SERVICE_URL}/api/statuses/${projectKey}`
       );
       const data = await response.json();
       if (response.ok) {
@@ -60,7 +65,7 @@ const Issues: React.FC = () => {
   const fetchIssues = async (month?: string) => {
     setLoading(true);
     let apiUrl = `${
-      import.meta.env.VITE_JIRA_SERVICE_URL
+      process.env.REACT_APP_JIRA_SERVICE_URL
     }/api/issues/${projectKey}?issue_type=${issueType}&page=${page}&size=${pageSize}`;
     if (month) {
       apiUrl += `&month=${month}`; // Add the month as a query parameter

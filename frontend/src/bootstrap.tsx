@@ -1,23 +1,41 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { createMemoryHistory, createBrowserHistory, History } from "history";
+import {
+  createMemoryHistory,
+  createBrowserHistory,
+  MemoryHistory,
+  BrowserHistory,
+} from "history";
+import type { Location, Update } from 'history';
 import App from "./App";
 
 let rootComponent: React.ReactElement | null = null;
 let root: ReactDOM.Root | null = null;
 
+type HistoryType = MemoryHistory | BrowserHistory;
+
 type MountOptions = {
-  basePath?: string;
+  basePath: string;
   onNavigate?: (location: { pathname: string }) => void;
-  defaultHistory?: History;
+  defaultHistory?: HistoryType;
   initialPath?: string;
 };
 
-const mount = (el: Element, { basePath, onNavigate, defaultHistory, initialPath }: MountOptions) => {
-  const history = defaultHistory || createMemoryHistory({ initialEntries: [initialPath || "/"] });
+// Mount function to start up the app
+const mount = (
+  el: Element,
+  { basePath, onNavigate, defaultHistory, initialPath }: MountOptions
+) => {
+  const history: HistoryType =
+    defaultHistory ||
+    createMemoryHistory({
+      initialEntries: [initialPath || "/"],
+    });
 
   if (onNavigate) {
-    history.listen(onNavigate);
+    history.listen(({ location }: { location: Location }) => {
+      onNavigate({ pathname: location.pathname });
+    });
   }
 
   if (el) {
@@ -33,6 +51,7 @@ const mount = (el: Element, { basePath, onNavigate, defaultHistory, initialPath 
   return {
     onParentNavigate({ pathname: nextPathname }: { pathname: string }) {
       const { pathname } = history.location;
+
       if (pathname !== nextPathname) {
         history.push(nextPathname);
       }
@@ -40,21 +59,28 @@ const mount = (el: Element, { basePath, onNavigate, defaultHistory, initialPath 
   };
 };
 
-const unmount = () => {
+// Function to unmount the microfrontend
+const unmount = (el: Element) => {
   if (root && rootComponent) {
-    root.unmount();
+    root.unmount(); // Use root.unmount() to unmount the root
     rootComponent = null;
   }
 };
 
-if (import.meta.env.MODE === "development") {
+// If we are in development and in isolation,
+// call mount immediately
+if (process.env.NODE_ENV === "development") {
   const devRoot = document.querySelector("#work-viewer-root");
+
   if (devRoot) {
-    mount(devRoot, {
+    const args = {
       defaultHistory: createBrowserHistory(),
       basePath: "/app/releases",
-    });
+      onNavigate: () => {}, // ← required to satisfy full typing
+      initialPath: "/",
+    };
+    mount(devRoot, args);
   }
 }
-
+// Export both the mount and unmount functions
 export { mount, unmount };
