@@ -64,9 +64,7 @@ const Issues: React.FC<IssuesProps> = ({ basePath, history }) => {
 
   const fetchIssues = async (month?: string) => {
     setLoading(true);
-    let apiUrl = `${
-      process.env.REACT_APP_JIRA_SERVICE_URL
-    }/api/issues/${projectKey}?issue_type=${issueType}&page=${page}&size=${pageSize}`;
+    let apiUrl = `${process.env.REACT_APP_JIRA_SERVICE_URL}/api/issues/${projectKey}?issue_type=${issueType}&page=${page}&size=${pageSize}`;
     if (month) {
       apiUrl += `&month=${month}`; // Add the month as a query parameter
     }
@@ -108,7 +106,11 @@ const Issues: React.FC<IssuesProps> = ({ basePath, history }) => {
 
   const getListData = (value: dayjs.Dayjs): JiraIssue[] => {
     const dateString = value.format("YYYY-MM-DD");
-    return calendarEvents.filter((item) => item.due_date === dateString);
+    return calendarEvents.filter(
+      (item) =>
+        dayjs(item.due_date || item.start_date).format("YYYY-MM-DD") ===
+        dateString
+    );
   };
 
   const MAX_BADGES_TO_SHOW = 1;
@@ -124,20 +126,31 @@ const Issues: React.FC<IssuesProps> = ({ basePath, history }) => {
 
     return (
       <div>
-        {visibleBadges.map((item) => (
-          <div
-            key={item.title}
-            style={{ marginBottom: 2 }}
-            onClick={() => {
-              if (item) {
-                setSelectedIssue(item);
-                setIsModalVisible(true);
-              }
-            }}
-          >
-            <Badge text={item.title} />
-          </div>
-        ))}
+        {visibleBadges.map((item) => {
+          return (
+            <div
+              key={item.title}
+              style={{ marginBottom: 2 }}
+              onClick={() => {
+                if (item) {
+                  setSelectedIssue(item);
+                  setIsModalVisible(true);
+                }
+              }}
+            >
+              <Badge
+                status={
+                  item.status === "Done"
+                    ? "success"
+                    : item.status === "In Progress"
+                    ? "processing"
+                    : "default"
+                }
+                text={item.title}
+              />
+            </div>
+          );
+        })}
         {remainingCount > 0 && (
           <Typography.Text
             type="secondary"
