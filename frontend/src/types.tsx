@@ -1,6 +1,7 @@
 export interface JiraIssue {
   key: string;
   title: string;
+  summary?: string;
   assignee: string;
   reporter: string;
   issue_type: string;
@@ -15,4 +16,14 @@ export interface PaginatedResponse {
   total: number;
   page: number;
   size: number;
+}
+
+export interface JiraSubtask {
+  key: string;
+  summary: string;
+  status: string;
+  assignee: string | null;
+  created: string;
+  updated: string;
+  resolution_date: string | null;
 }

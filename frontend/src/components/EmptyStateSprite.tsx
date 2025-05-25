@@ -1,6 +1,6 @@
 // src/components/EmptyStateSprite.tsx
 import React, { useEffect, useState } from "react";
-import { Typography, Spin } from "antd";
+import { Typography, Spin, message } from "antd";
 import "./EmptyStateSprite.css";
 
 const { Text } = Typography;
@@ -12,21 +12,23 @@ const SPRITE_POSITIONS = [
   { x: -256, y: -256 },
 ];
 
-const EmptyStateSprite: React.FC = () => {
+const EmptyStateSprite: React.FC<{ message?: string }> = ({ message }) => {
   const [quote, setQuote] = useState<string | null>(null);
   const [spriteIndex, setSpriteIndex] = useState<number>(
     Math.floor(Math.random() * 4)
   );
 
   useEffect(() => {
-    fetch("https://api.quotable.io/random?tags=wisdom|funny|technology")
-      .then((res) => res.json())
-      .then((data) => {
-        setQuote(data.content);
-      })
-      .catch(() => {
-        setQuote("Even the void has something to say.");
-      });
+    // fetch("https://api.quotable.io/random?tags=wisdom|funny|technology")
+    //   .then((res) => res.json())
+    //   .then((data) => {
+    //     setQuote(data.content);
+    //   })
+    //   .catch(() => {
+    message
+      ? setQuote(message)
+      : setQuote("Even the void has something to say.");
+    //   });
   }, []);
 
   const { x, y } = SPRITE_POSITIONS[spriteIndex];

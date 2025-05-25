@@ -15,12 +15,9 @@ import dayjs from "dayjs";
 import { motion, AnimatePresence } from "framer-motion";
 import { JiraIssue } from "../types";
 import IssueListItem from "./IssueListItem";
-import IssuePreviewer from "./IssuePreviewer";
 
 interface Props {
   issues: JiraIssue[];
-  selectedIssue: JiraIssue | null;
-  onSelectIssue: (issue: JiraIssue) => void;
   currentMonth: string;
   setCurrentMonth: (val: string) => void;
   page: number;
@@ -28,13 +25,11 @@ interface Props {
   loading: boolean;
   total: number;
   pageSize: number;
-  onClose: any;
+  fetchIssueDetails:any;
 }
 
 const IssueListView: React.FC<Props> = ({
   issues,
-  selectedIssue,
-  onSelectIssue,
   currentMonth,
   setCurrentMonth,
   page,
@@ -42,7 +37,7 @@ const IssueListView: React.FC<Props> = ({
   loading,
   total,
   pageSize,
-  onClose
+  fetchIssueDetails
 }) => {
   const allLoaded = issues.length >= total;
   const generateMonthRange = (current: string) => {
@@ -97,7 +92,7 @@ const IssueListView: React.FC<Props> = ({
         <MonthScroller currentMonth={currentMonth} onChange={setCurrentMonth} />
       </Col>
       <Col
-        span={14}
+        span={20}
         onScroll={handleScroll}
         style={{ height: "80vh", overflow: "auto" }}
       >
@@ -138,7 +133,7 @@ const IssueListView: React.FC<Props> = ({
                       <IssueListItem
                         key={issue.key}
                         issue={issue}
-                        onClick={() => onSelectIssue(issue)}
+                        onClick={() => fetchIssueDetails(issue.key)}
                       />
                     )}
                   />
@@ -160,9 +155,6 @@ const IssueListView: React.FC<Props> = ({
             </motion.div>
           </AnimatePresence>
         )}
-      </Col>
-      <Col span={6} style={{ position: "relative", minHeight: 300 }}>
-        <IssuePreviewer issue={selectedIssue} onClose={onClose}/>
       </Col>
     </Row>
   );

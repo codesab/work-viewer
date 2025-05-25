@@ -2,7 +2,13 @@ import React from "react";
 import { Avatar, List, Tag, Typography, Space, Tooltip, Badge } from "antd";
 import { JiraIssue } from "../types";
 import dayjs from "dayjs";
-import { getAvatarColor, getIcon, getInitials, getStatusColor, getTagColor } from "../utils";
+import {
+  getAvatarColor,
+  getIcon,
+  getInitials,
+  getStatusColor,
+  getTagColor,
+} from "../utils";
 
 interface Props {
   issue: JiraIssue;
@@ -16,15 +22,10 @@ const IssueListItem: React.FC<Props> = ({ issue, onClick }) => {
 
   return (
     <List.Item
-      style={{ cursor: "pointer"}}
+      style={{ cursor: "pointer" }}
       onClick={onClick}
       actions={[
         <Tag color={getStatusColor(issue.status)}>{issue.status}</Tag>,
-        isDelayed && (
-          <Tooltip title="Delayed">
-            <Badge status="error" text="Overdue" />
-          </Tooltip>
-        ),
       ].filter(Boolean)}
     >
       <List.Item.Meta
@@ -49,15 +50,22 @@ const IssueListItem: React.FC<Props> = ({ issue, onClick }) => {
           </Space>
         }
         description={
-          issue.due_date
-            ? `Due ${
-                dayjs(issue.due_date).isBefore(dayjs(), "day")
-                  ? `overdue by ${dayjs().diff(issue.due_date, "day")} day(s)`
-                  : dayjs(issue.due_date).isSame(dayjs(), "day")
-                  ? "today"
-                  : `in ${dayjs(issue.due_date).diff(dayjs(), "day")} day(s)`
-              }`
-            : "No due date"
+          <Space>
+            {issue.due_date
+              ? `Due ${
+                  dayjs(issue.due_date).isBefore(dayjs(), "day")
+                    ? `overdue by ${dayjs().diff(issue.due_date, "day")} day(s)`
+                    : dayjs(issue.due_date).isSame(dayjs(), "day")
+                    ? "today"
+                    : `in ${dayjs(issue.due_date).diff(dayjs(), "day")} day(s)`
+                }`
+              : "No due date"}
+            {isDelayed && (
+              <Tooltip title="Delayed">
+                <Badge status="error" text="Overdue" />
+              </Tooltip>
+            )}
+          </Space>
         }
       />
     </List.Item>

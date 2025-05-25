@@ -1,4 +1,3 @@
-// src/components/IssueCalendarView.tsx
 import React from "react";
 import { Calendar, Typography } from "antd";
 import dayjs, { Dayjs } from "dayjs";

@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import { Alert, Typography, Space, Input, DatePicker } from "antd";
+import { useNavigate, useParams } from "react-router-dom";
+import { Alert, Typography, Space, Input, DatePicker, Row, Col } from "antd";
 import dayjs from "dayjs";
-import { JiraIssue, PaginatedResponse } from "../types";
+import { JiraIssue, JiraSubtask, PaginatedResponse } from "../types";
 import IssueListView from "../components/IssueListView";
 import IssueCalendarView from "../components/IssueCalendarView";
 import IssuesHeader from "../components/IssuesHeader";
+import IssuePreviewer from "../components/IssuePreviewer";
 
 const { Search } = Input;
 const { MonthPicker } = DatePicker;
@@ -17,7 +18,19 @@ interface IssuesProps {
 
 const Issues: React.FC<IssuesProps> = ({ basePath, history }) => {
   const [issues, setIssues] = useState<PaginatedResponse | null>(null);
-  const [selectedIssue, setSelectedIssue] = useState<JiraIssue | null>(null);
+  const [selectedIssue, setSelectedIssue] = useState<{
+    issue: JiraIssue;
+    subtasks: JiraSubtask[];
+    progress: {
+      total_subtasks: number;
+      completed: number;
+      in_progress: number;
+      todo: number;
+      completed_percentage: number;
+      in_progress_percentage: number;
+      todo_percentage: number;
+    };
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -27,14 +40,35 @@ const Issues: React.FC<IssuesProps> = ({ basePath, history }) => {
   const [searchText, setSearchText] = useState("");
 
   const { view } = useParams();
-  const selectedView = view === "calendar" ? "calendar" : "list";
+  const selectedView = view === "calendar" || view === "list" ? view : "list";
   const [viewMode, setViewMode] = useState<"list" | "calendar">(selectedView);
   const [total, setTotal] = useState<number>(0);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const navigate = useNavigate();
 
   const [currentMonth, setCurrentMonth] = useState<string>(
     dayjs().format("YYYY-MM")
   );
   const projectKey = "PHNX";
+
+  const fetchIssueDetails = async (issueKey: string) => {
+    setPreviewLoading(true);
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_JIRA_SERVICE_URL}/api/issue/${issueKey}`
+      );
+      const data = await response.json();
+      if (response.ok) {
+        setSelectedIssue(data); // This will now be detailed
+      } else {
+        console.error("Failed to fetch issue details:", data.detail);
+      }
+    } catch (err) {
+      console.error("Error fetching issue details:", err);
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
 
   const fetchIssues = async (month?: string) => {
     setLoading(true);
@@ -71,49 +105,14 @@ const Issues: React.FC<IssuesProps> = ({ basePath, history }) => {
     fetchIssues(currentMonth);
   }, [issueType, page, currentMonth]);
 
-  const onPanelChange = (value: dayjs.Dayjs) => {
-    setCurrentMonth(value.format("YYYY-MM"));
-    setPage(1);
-  };
-
-  const cellRender = (value: dayjs.Dayjs) => {
-    const dateString = value.format("YYYY-MM-DD");
-    const events = issues?.items?.filter(
-      (item) =>
-        dayjs(item.due_date || item.start_date).format("YYYY-MM-DD") ===
-        dateString
-    );
-    const MAX_BADGES = 1;
-    if (!events || events.length === 0) return null;
-
-    const visible = events.slice(0, MAX_BADGES);
-    const remaining = events.length - MAX_BADGES;
-
-    return (
-      <div>
-        {visible.map((event) => (
-          <div
-            key={event.key}
-            onClick={() => setSelectedIssue(event)}
-            style={{ cursor: "pointer" }}
-          >
-            <Typography.Text>{event.title}</Typography.Text>
-          </div>
-        ))}
-        {remaining > 0 && (
-          <Typography.Text type="secondary" style={{ fontSize: "0.8em" }}>
-            +{remaining} more
-          </Typography.Text>
-        )}
-      </div>
-    );
-  };
-
   return (
-    <div style={{ padding: "24px" }}>
-      <IssuesHeader selectedView={selectedView} onViewChange={setViewMode} />
-
-      {/* <Space
+    <>
+      <IssuesHeader
+        selectedView={selectedView}
+        onViewChange={(val) => navigate(`/issues/${val}`)}
+      />
+      <Row gutter={24}>
+        {/* <Space
         style={{
           display: "flex",
           justifyContent: "space-between",
@@ -136,32 +135,40 @@ const Issues: React.FC<IssuesProps> = ({ basePath, history }) => {
         />
       </Space> */}
 
-      {error && (
-        <Alert type="error" message={error} style={{ marginTop: 16 }} />
-      )}
+        <Col span={18}>
+          {error && (
+            <Alert type="error" message={error} style={{ marginTop: 16 }} />
+          )}
 
-      {selectedView === "list" ? (
-        <IssueListView
-          issues={issues?.items || []}
-          selectedIssue={selectedIssue}
-          onSelectIssue={setSelectedIssue}
-          currentMonth={currentMonth}
-          setCurrentMonth={setCurrentMonth}
-          page={page}
-          setPage={setPage}
-          loading={loading}
-          total={total}
-          pageSize={pageSize}
-          onClose={() => setSelectedIssue(null)}
-        />
-      ) : (
-        <IssueCalendarView
-          issues={issues?.items || []}
-          onDateSelect={(issue) => setSelectedIssue(issue)}
-          onMonthChange={(month) => setCurrentMonth(month)}
-        />
-      )}
-    </div>
+          {selectedView === "list" ? (
+            <IssueListView
+              issues={issues?.items || []}
+              currentMonth={currentMonth}
+              setCurrentMonth={setCurrentMonth}
+              page={page}
+              setPage={setPage}
+              loading={loading}
+              total={total}
+              pageSize={pageSize}
+              fetchIssueDetails={fetchIssueDetails}
+            />
+          ) : (
+            <IssueCalendarView
+              issues={issues?.items || []}
+              onDateSelect={(issue) => fetchIssueDetails(issue.key)}
+              onMonthChange={(month) => setCurrentMonth(month)}
+            />
+          )}
+        </Col>
+        <Col span={6} style={{ position: "relative", minHeight: 300 }}>
+          <IssuePreviewer
+            issueDetails={selectedIssue}
+            loading={previewLoading}
+            onClose={() => setSelectedIssue(null)}
+          />
+        </Col>
+      </Row>
+    </>
   );
 };
 
