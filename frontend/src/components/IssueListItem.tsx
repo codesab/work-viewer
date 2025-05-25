@@ -1,46 +1,13 @@
 import React from "react";
 import { Avatar, List, Tag, Typography, Space, Tooltip, Badge } from "antd";
 import { JiraIssue } from "../types";
-import {
-  BugOutlined,
-  FileTextOutlined,
-  ThunderboltOutlined,
-  CheckCircleOutlined,
-} from "@ant-design/icons";
 import dayjs from "dayjs";
+import { getAvatarColor, getIcon, getInitials, getStatusColor, getTagColor } from "../utils";
 
 interface Props {
   issue: JiraIssue;
   onClick: () => void;
 }
-
-const getStatusColor = (status: string) => {
-  switch (status.toLowerCase()) {
-    case "done":
-      return "green";
-    case "in progress":
-      return "blue";
-    case "to do":
-      return "gray";
-    default:
-      return "default";
-  }
-};
-
-const getIcon = (type: string) => {
-  switch (type.toLowerCase()) {
-    case "bug":
-      return <BugOutlined style={{ color: "red" }} />;
-    case "story":
-      return <FileTextOutlined style={{ color: "blue" }} />;
-    case "epic":
-      return <ThunderboltOutlined style={{ color: "purple" }} />;
-    case "sub-task":
-      return <CheckCircleOutlined style={{ color: "green" }} />;
-    default:
-      return <FileTextOutlined />;
-  }
-};
 
 const IssueListItem: React.FC<Props> = ({ issue, onClick }) => {
   const isDelayed = issue.due_date
@@ -49,7 +16,7 @@ const IssueListItem: React.FC<Props> = ({ issue, onClick }) => {
 
   return (
     <List.Item
-      style={{ cursor: "pointer" }}
+      style={{ cursor: "pointer"}}
       onClick={onClick}
       actions={[
         <Tag color={getStatusColor(issue.status)}>{issue.status}</Tag>,
@@ -61,15 +28,37 @@ const IssueListItem: React.FC<Props> = ({ issue, onClick }) => {
       ].filter(Boolean)}
     >
       <List.Item.Meta
-        avatar={<Avatar>{issue.assignee?.charAt(0)}</Avatar>}
+        avatar={
+          <Tooltip title={issue.assignee || "Unassigned"}>
+            <Avatar
+              style={{ backgroundColor: getAvatarColor(issue.assignee || "") }}
+            >
+              {getInitials(issue.assignee || "")}
+            </Avatar>
+          </Tooltip>
+        }
         title={
           <Space>
-            {getIcon(issue.issue_type)}
-            <Typography.Text strong>{issue.key}</Typography.Text>
+            <Tag
+              icon={getIcon(issue.issue_type)}
+              color={getTagColor(issue.issue_type)}
+            >
+              {issue.key}
+            </Tag>
             <Typography.Text>{issue.title}</Typography.Text>
           </Space>
         }
-        description={`Due: ${issue.due_date || "--"}`}
+        description={
+          issue.due_date
+            ? `Due ${
+                dayjs(issue.due_date).isBefore(dayjs(), "day")
+                  ? `overdue by ${dayjs().diff(issue.due_date, "day")} day(s)`
+                  : dayjs(issue.due_date).isSame(dayjs(), "day")
+                  ? "today"
+                  : `in ${dayjs(issue.due_date).diff(dayjs(), "day")} day(s)`
+              }`
+            : "No due date"
+        }
       />
     </List.Item>
   );

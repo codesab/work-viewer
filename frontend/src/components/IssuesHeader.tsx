@@ -1,3 +1,8 @@
+import {
+  BarsOutlined,
+  CalendarOutlined,
+  PlusOutlined,
+} from "@ant-design/icons";
 import { Row, Col, Typography, Space, Segmented, Button } from "antd";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -23,8 +28,12 @@ const IssuesHeader = ({
         <Space>
           <Segmented
             options={[
-              { label: "List View", value: "list" },
-              { label: "Calendar View", value: "calendar" },
+              { label: "List View", value: "list", icon: <BarsOutlined /> },
+              {
+                label: "Calendar View",
+                value: "calendar",
+                icon: <CalendarOutlined />,
+              },
             ]}
             value={selectedView}
             onChange={(val) => {
@@ -32,8 +41,8 @@ const IssuesHeader = ({
               onViewChange(val as "list" | "calendar");
             }}
           />
-          <Button type="primary" onClick={() => window.open("https://your-form-url.com", "_blank")}>
-            Report Bug / Feature
+          <Button type="primary" icon={<PlusOutlined />}>
+            Report New
           </Button>
         </Space>
       </Col>

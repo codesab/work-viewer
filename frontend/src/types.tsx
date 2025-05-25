@@ -1,7 +1,7 @@
 export interface JiraIssue {
   key: string;
   title: string;
-  assignee: string | null;
+  assignee: string;
   reporter: string;
   issue_type: string;
   status: string;

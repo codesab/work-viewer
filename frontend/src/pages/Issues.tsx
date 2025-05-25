@@ -23,12 +23,13 @@ const Issues: React.FC<IssuesProps> = ({ basePath, history }) => {
 
   const [issueType, setIssueType] = useState<string>("Story");
   const [page, setPage] = useState<number>(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize] = useState(10);
   const [searchText, setSearchText] = useState("");
 
   const { view } = useParams();
   const selectedView = view === "calendar" ? "calendar" : "list";
   const [viewMode, setViewMode] = useState<"list" | "calendar">(selectedView);
+  const [total, setTotal] = useState<number>(0);
 
   const [currentMonth, setCurrentMonth] = useState<string>(
     dayjs().format("YYYY-MM")
@@ -45,6 +46,7 @@ const Issues: React.FC<IssuesProps> = ({ basePath, history }) => {
       const response = await fetch(apiUrl);
       const data = await response.json();
       if (response.ok) {
+        setTotal(data.total);
         setIssues((prev: PaginatedResponse | null) =>
           page === 1
             ? data
@@ -67,7 +69,7 @@ const Issues: React.FC<IssuesProps> = ({ basePath, history }) => {
 
   useEffect(() => {
     fetchIssues(currentMonth);
-  }, [issueType, page, pageSize, currentMonth]);
+  }, [issueType, page, currentMonth]);
 
   const onPanelChange = (value: dayjs.Dayjs) => {
     setCurrentMonth(value.format("YYYY-MM"));
@@ -111,7 +113,7 @@ const Issues: React.FC<IssuesProps> = ({ basePath, history }) => {
     <div style={{ padding: "24px" }}>
       <IssuesHeader selectedView={selectedView} onViewChange={setViewMode} />
 
-      <Space
+      {/* <Space
         style={{
           display: "flex",
           justifyContent: "space-between",
@@ -132,7 +134,7 @@ const Issues: React.FC<IssuesProps> = ({ basePath, history }) => {
           }}
           placeholder="Select month"
         />
-      </Space>
+      </Space> */}
 
       {error && (
         <Alert type="error" message={error} style={{ marginTop: 16 }} />
@@ -148,6 +150,9 @@ const Issues: React.FC<IssuesProps> = ({ basePath, history }) => {
           page={page}
           setPage={setPage}
           loading={loading}
+          total={total}
+          pageSize={pageSize}
+          onClose={() => setSelectedIssue(null)}
         />
       ) : (
         <IssueCalendarView

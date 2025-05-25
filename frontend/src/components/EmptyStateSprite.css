@@ -1,0 +1,16 @@
+/* src/components/EmptyStateSprite.css */
+.empty-state-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px;
+}
+
+.sprite-image {
+  width: 256px;
+  height: 256px;
+  background-image: url("../assets/images/empty.png");
+  background-repeat: no-repeat;
+  background-size: 512px 512px; /* 2x2 sprite grid */
+  border-radius: 12px;
+}
