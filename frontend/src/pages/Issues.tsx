@@ -107,6 +107,7 @@ const Issues: React.FC<IssuesProps> = ({ basePath, history }) => {
 
   const handleMonthChange = (month: string) => {
   setPage(1);
+  setLoading(true);
   setIssues(null); // this works now because state is here
   setCurrentMonth(month);
   navigate(`/app/releases/${viewMode}/${month}`);
