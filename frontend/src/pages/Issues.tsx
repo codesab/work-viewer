@@ -1,86 +1,95 @@
 import React, { useEffect, useState } from "react";
-import {
-  Calendar,
-  Badge,
-  Modal,
-  Typography,
-  Space,
-  Select,
-  Input,
-  Alert,
-  Descriptions,
-  Tag,
-} from "antd";
+import { useNavigate, useParams } from "react-router-dom";
+import { Alert, Typography, Space, Input, DatePicker, Row, Col } from "antd";
 import dayjs from "dayjs";
-import { JiraIssue, PaginatedResponse } from "../types";
+import { JiraIssue, JiraSubtask, PaginatedResponse } from "../types";
+import IssueListView from "../components/IssueListView";
+import IssueCalendarView from "../components/IssueCalendarView";
+import IssuesHeader from "../components/IssuesHeader";
+import IssuePreviewer from "../components/IssuePreviewer";
 
-const { Title } = Typography;
 const { Search } = Input;
+const { MonthPicker } = DatePicker;
 
-const Issues: React.FC = () => {
+interface IssuesProps {
+  basePath: string;
+  history: any;
+}
+
+const Issues: React.FC<IssuesProps> = ({ basePath, history }) => {
   const [issues, setIssues] = useState<PaginatedResponse | null>(null);
+  const [selectedIssue, setSelectedIssue] = useState<{
+    issue: JiraIssue;
+    subtasks: JiraSubtask[];
+    progress: {
+      total_subtasks: number;
+      completed: number;
+      in_progress: number;
+      todo: number;
+      completed_percentage: number;
+      in_progress_percentage: number;
+      todo_percentage: number;
+    };
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [issueType, setIssueType] = useState<string>("Story");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [searchText, setSearchText] = useState("");
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
-  const [availableStatuses, setAvailableStatuses] = useState<string[]>([]);
-  const [calendarEvents, setCalendarEvents] = useState<
-    {
-      type:
-        | "success"
-        | "processing"
-        | "warning"
-        | "error"
-        | "default"
-        | undefined;
-      content: string;
-      date: string;
-      key: string;
-    }[]
-  >([]);
-  const [currentMonth, setCurrentMonth] = useState<string>(
-    dayjs().format("YYYY-MM"),
-  ); // State for current month
-  const projectKey = "PHNX";
-  const [selectedIssue, setSelectedIssue] = useState<JiraIssue | null>(null);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [isAllIssuesModalVisible, setIsAllIssuesModalVisible] = useState(false);
-  const [allIssuesForDate, setAllIssuesForDate] = useState<JiraIssue[]>([]);
-  const [selectedDateForIssues, setSelectedDateForIssues] =
-    useState<dayjs.Dayjs | null>(null);
 
-  const fetchStatuses = async () => {
+  const [issueType, setIssueType] = useState<string>("Story");
+  const [page, setPage] = useState<number>(1);
+  const [pageSize] = useState(10);
+  const [searchText, setSearchText] = useState("");
+
+  const { view, month } = useParams();
+  const selectedView = view === "calendar" || view === "list" ? view : "list";
+  const [viewMode, setViewMode] = useState<"list" | "calendar">(selectedView);
+  const [total, setTotal] = useState<number>(0);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const [currentMonth, setCurrentMonth] = useState<string>(
+    month || dayjs().format("YYYY-MM")
+  );
+  const projectKey = "PHNX";
+
+  const fetchIssueDetails = async (issueKey: string) => {
+    setPreviewLoading(true);
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_JIRA_SERVICE_URL}/api/statuses/${projectKey}`,
+        `${process.env.REACT_APP_JIRA_SERVICE_URL}/api/issue/${issueKey}`
       );
       const data = await response.json();
       if (response.ok) {
-        setAvailableStatuses(data.statuses);
+        setSelectedIssue(data); // This will now be detailed
+      } else {
+        console.error("Failed to fetch issue details:", data.detail);
       }
     } catch (err) {
-      console.error("Failed to fetch statuses:", err);
+      console.error("Error fetching issue details:", err);
+    } finally {
+      setPreviewLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchStatuses();
-  }, []);
-
   const fetchIssues = async (month?: string) => {
     setLoading(true);
-    let apiUrl = `${import.meta.env.VITE_JIRA_SERVICE_URL}/api/issues/${projectKey}?issue_type=${issueType}&page=${page}&size=${pageSize}`;
+    let apiUrl = `${process.env.REACT_APP_JIRA_SERVICE_URL}/api/issues/${projectKey}?issue_type=${issueType}&page=${page}&size=${pageSize}`;
     if (month) {
-      apiUrl += `&month=${month}`; // Add the month as a query parameter
+      apiUrl += `&month=${month}`;
     }
     try {
       const response = await fetch(apiUrl);
       const data = await response.json();
       if (response.ok) {
-        setIssues(data);
+        setTotal(data.total);
+        setIssues((prev: PaginatedResponse | null) =>
+          page === 1
+            ? data
+            : {
+                ...data,
+                items: [...(prev?.items || []), ...data.items],
+              }
+        );
+
         setError(null);
       } else {
         setError(data.detail);
@@ -93,238 +102,82 @@ const Issues: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchIssues(currentMonth); // Fetch issues for the current month on initial load
-  }, [issueType, page, pageSize, currentMonth]); // Re-fetch if these dependencies change
+    fetchIssues(currentMonth);
+  }, [issueType, page, currentMonth]);
 
-  useEffect(() => {
-    if (issues?.items) {
-      const events = issues.items.reduce(
-        (acc, issue) => {
-          const eventDate = issue.due_date || issue.start_date;
-          if (
-            eventDate &&
-            dayjs(eventDate).format("YYYY-MM") === currentMonth
-          ) {
-            // Only include events for the current month
-            acc.push({
-              type: "success",
-              content: issue.title,
-              date: eventDate,
-              ...issue,
-            });
-          }
-          return acc;
-        },
-        [] as {
-          type:
-            | "success"
-            | "processing"
-            | "warning"
-            | "error"
-            | "default"
-            | undefined;
-          content: string;
-          date: string;
-          key: string;
-        }[],
-      );
-      setCalendarEvents(events);
-    }
-  }, [issues, currentMonth]);
+  const handleMonthChange = (month: string) => {
+  setPage(1);
+  setLoading(true);
+  setIssues(null); // this works now because state is here
+  setCurrentMonth(month);
+  navigate(`/app/releases/${viewMode}/${month}`);
+};
 
-  const getListData = (value: dayjs.Dayjs) => {
-    const dateString = value.format("YYYY-MM-DD");
-    return calendarEvents.filter((item) => item.date === dateString);
-  };
-
-  const MAX_BADGES_TO_SHOW = 1;
-
-  const cellRender = (value: dayjs.Dayjs) => {
-    const listData = getListData(value);
-    const visibleBadges = listData.slice(0, MAX_BADGES_TO_SHOW);
-    const remainingCount = listData.length - MAX_BADGES_TO_SHOW;
-    const allIssuesOnDate =
-      issues?.items?.filter(
-        (issue) => issue.due_date === value.format("YYYY-MM-DD")
-      ) || [];
-
-    return (
-      <div>
-        {visibleBadges.map((item) => (
-          <div
-            key={item.content}
-            style={{ marginBottom: 2 }}
-            onClick={() => {
-              if (item) {
-                setSelectedIssue(item);
-                setIsModalVisible(true);
-              }
-            }}
-          >
-            <Badge status={item.type} text={item.content} />
-          </div>
-        ))}
-        {remainingCount > 0 && (
-          <Typography.Text
-            type="secondary"
-            style={{ fontSize: "0.8em" }}
-            onClick={() => {
-              setSelectedDateForIssues(value);
-              setAllIssuesForDate(allIssuesOnDate);
-              setIsAllIssuesModalVisible(true);
-            }}
-          >
-            +{remainingCount} more
-          </Typography.Text>
-        )}
-      </div>
-    );
-  };
-
-  const onPanelChange = (value: dayjs.Dayjs) => {
-    setCurrentMonth(value.format("YYYY-MM"));
-    setPage(1); // Reset page on month change
-  };
 
   return (
-    <div style={{ padding: "24px" }}>
-      <Space direction="vertical" style={{ width: "100%" }} size="large">
-        <Title level={2}>Product and Engineering Releases 🗓️</Title>
+    <div style={{padding: 24}}>
+      <IssuesHeader
+        selectedView={selectedView}
+        onViewChange={(val) => navigate(`/app/releases/${val}`)}
+      />
+      <Row gutter={24}>
+        {/* <Space
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          marginTop: 16,
+        }}
+      >
+        <Search
+          placeholder="Search by key or summary"
+          allowClear
+          onChange={(e) => setSearchText(e.target.value)}
+          style={{ width: 300 }}
+        />
 
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
+        <MonthPicker
+          value={dayjs(currentMonth)}
+          onChange={(value) => {
+            if (value) setCurrentMonth(value.format("YYYY-MM"));
           }}
-        >
-          <Search
-            placeholder="Search by key or summary"
-            allowClear
-            onChange={(e) => setSearchText(e.target.value)}
-            style={{ width: 300 }}
+          placeholder="Select month"
+        />
+      </Space> */}
+
+        <Col span={18}>
+          {error && (
+            <Alert type="error" message={error} style={{ marginTop: 16 }} />
+          )}
+
+          {selectedView === "list" ? (
+            <IssueListView
+              issues={issues?.items || []}
+              currentMonth={currentMonth}
+              setCurrentMonth={setCurrentMonth}
+              onMonthChange={handleMonthChange}
+              page={page}
+              setPage={setPage}
+              loading={loading}
+              total={total}
+              pageSize={pageSize}
+              fetchIssueDetails={fetchIssueDetails}
+            />
+          ) : (
+            <IssueCalendarView
+              issues={issues?.items || []}
+              onDateSelect={(issue) => fetchIssueDetails(issue.key)}
+              onMonthChange={(month) => setCurrentMonth(month)}
+            />
+          )}
+        </Col>
+        <Col span={6} style={{ position: "relative", minHeight: 300 }}>
+          <IssuePreviewer
+            issueDetails={selectedIssue}
+            loading={previewLoading}
+            onClose={() => setSelectedIssue(null)}
           />
-
-          <Space>
-            {/* <span>Issue Type:</span> */}
-            <Space>
-              {/* <Select
-                value={issueType}
-                onChange={setIssueType}
-                style={{ width: 120 }}
-                options={[
-                  { value: "Story", label: "Story" },
-                  { value: "Task", label: "Task" },
-                ]}
-              /> */}
-              {/* <Select
-                mode="multiple"
-                placeholder="Filter by status"
-                value={selectedStatuses}
-                onChange={setSelectedStatuses}
-                style={{ width: 200 }}
-                options={availableStatuses.map((status) => ({
-                  value: status,
-                  label: status,
-                }))}
-                allowClear
-              /> */}
-            </Space>
-          </Space>
-        </div>
-
-        {error && <Alert type="error" message={error} />}
-
-        <Calendar cellRender={cellRender} onPanelChange={onPanelChange} />
-      </Space>
-      <Modal
-        title={
-          selectedIssue
-            ? `Issue Details: ${selectedIssue.key}`
-            : "Issue Details"
-        }
-        open={isModalVisible}
-        onOk={() => setIsModalVisible(false)}
-        onCancel={() => setIsModalVisible(false)}
-      >
-        {selectedIssue && (
-          <Descriptions bordered column={1}>
-            <Descriptions.Item label="Key">
-              {selectedIssue.key}
-            </Descriptions.Item>
-            <Descriptions.Item label="Summary">
-              {selectedIssue.title}
-            </Descriptions.Item>
-            <Descriptions.Item label="Assignee">
-              {selectedIssue.assignee || "Unassigned"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Description">
-              {`${selectedIssue.description?.substring(0, 250)} .. (Truncated for brevity)` ||
-                "--"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Due Date">
-              {selectedIssue.due_date || "--"}
-              {selectedIssue.due_date &&
-              dayjs().isAfter(dayjs(selectedIssue.due_date), "day") ? (
-                <Badge
-                  status="error"
-                  text={`${selectedIssue.status} (Delayed)`}
-                />
-              ) : (
-                <></>
-              )}
-            </Descriptions.Item>
-            <Descriptions.Item label="Status">
-              <Tag
-                color={
-                  selectedIssue.status === "Done"
-                    ? "green"
-                    : selectedIssue.status === "In Progress"
-                      ? "blue"
-                      : "gray"
-                }
-              >
-                {selectedIssue.status}
-              </Tag>
-            </Descriptions.Item>
-          </Descriptions>
-        )}
-      </Modal>
-      <Modal
-        title={selectedDateForIssues ? `Issues on ${selectedDateForIssues.format('YYYY-MM-DD')}` : 'Issues'}
-        open={isAllIssuesModalVisible}
-        onOk={() => setIsAllIssuesModalVisible(false)}
-        onCancel={() => setIsAllIssuesModalVisible(false)}
-      >
-        {allIssuesForDate.length > 0 ? (
-          <Space direction="vertical">
-            {allIssuesForDate.map((issue) => (
-              <div key={issue.key}>
-                <Typography.Text strong>{issue.key}:</Typography.Text> {issue.title}
-              </div>
-            ))}
-          </Space>
-        ) : (
-          <Typography.Text>No issues on this date.</Typography.Text>
-        )}
-      </Modal><Modal
-        title={selectedDateForIssues ? `Issues on ${selectedDateForIssues.format('YYYY-MM-DD')}` : 'Issues'}
-        open={isAllIssuesModalVisible}
-        onOk={() => setIsAllIssuesModalVisible(false)}
-        onCancel={() => setIsAllIssuesModalVisible(false)}
-      >
-        {allIssuesForDate.length > 0 ? (
-          <Space direction="vertical">
-            {allIssuesForDate.map((issue) => (
-              <div key={issue.key}>
-                <Typography.Text strong>{issue.key}:</Typography.Text> {issue.title}
-              </div>
-            ))}
-          </Space>
-        ) : (
-          <Typography.Text>No issues on this date.</Typography.Text>
-        )}
-      </Modal>
+        </Col>
+      </Row>
     </div>
   );
 };
