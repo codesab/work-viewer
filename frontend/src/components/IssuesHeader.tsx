@@ -3,7 +3,7 @@ import {
   CalendarOutlined,
   PlusOutlined,
 } from "@ant-design/icons";
-import { Row, Col, Typography, Space, Segmented, Button } from "antd";
+import { Row, Col, Typography, Space, Segmented, Button, Tooltip } from "antd";
 import { useNavigate, useParams } from "react-router-dom";
 
 const { Title } = Typography;
@@ -37,13 +37,15 @@ const IssuesHeader = ({
             ]}
             value={selectedView}
             onChange={(val) => {
-              navigate(`/issues/${val}`);
+              navigate(`/app/releases/${val}`);
               onViewChange(val as "list" | "calendar");
             }}
           />
-          <Button type="primary" icon={<PlusOutlined />}>
-            Report New
-          </Button>
+          <Tooltip title="Coming soon!">
+            <Button type="primary" icon={<PlusOutlined />} disabled>
+              Report New
+            </Button>
+          </Tooltip>
         </Space>
       </Col>
     </Row>

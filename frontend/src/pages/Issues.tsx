@@ -106,10 +106,10 @@ const Issues: React.FC<IssuesProps> = ({ basePath, history }) => {
   }, [issueType, page, currentMonth]);
 
   return (
-    <>
+    <div style={{padding: 24}}>
       <IssuesHeader
         selectedView={selectedView}
-        onViewChange={(val) => navigate(`/issues/${val}`)}
+        onViewChange={(val) => navigate(`/app/releases/${val}`)}
       />
       <Row gutter={24}>
         {/* <Space
@@ -168,7 +168,7 @@ const Issues: React.FC<IssuesProps> = ({ basePath, history }) => {
           />
         </Col>
       </Row>
-    </>
+    </div>
   );
 };
 

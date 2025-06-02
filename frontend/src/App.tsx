@@ -12,7 +12,7 @@ interface AppProps {
 const App: React.FC<AppProps> = ({ args }) => {
   return  <BrowserRouter>
     <Routes>
-      <Route path="/issues/:view?" element={<Issues basePath="/issues" history={null} />} />
+      <Route path="/app/releases/:view?" element={<Issues basePath={args.basePath} history={null} />} />
     </Routes>
   </BrowserRouter>
   //<Issues basePath={args.basePath} history={args.history} />;
