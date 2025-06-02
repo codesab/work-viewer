@@ -82,13 +82,14 @@ async def validate_project(project_key: str):
 
 
 @app.get("/api/issues/{project_key}")
-async def get_issues(project_key: str,
-                     # issue_type: str = "Story",
-                     page: int = 1,
-                     size: int = 10,
-                     sort_by: str = "key",
-                     sort_order: str = "asc",
-                     month: Optional[str] = None):
+async def get_issues(
+        project_key: str,
+        # issue_type: str = "Story",
+        page: int = 1,
+        size: int = 10,
+        sort_by: str = "key",
+        sort_order: str = "asc",
+        month: Optional[str] = None):
     jira = get_jira_client()
     try:
         start_at = (page - 1) * size
@@ -183,13 +184,22 @@ async def get_issue_details(issue_key: str):
                 status_name = subtask_detail.fields.status.name.lower()
 
                 subtasks.append({
-                    "key": subtask_detail.key,
-                    "summary": subtask_detail.fields.summary,
-                    "status": subtask_detail.fields.status.name,
-                    "assignee": subtask_detail.fields.assignee.displayName if subtask_detail.fields.assignee else None,
-                    "created": str(subtask_detail.fields.created),
-                    "updated": str(subtask_detail.fields.updated),
-                    "resolution_date": str(subtask_detail.fields.resolutiondate) if subtask_detail.fields.resolutiondate else None
+                    "key":
+                    subtask_detail.key,
+                    "summary":
+                    subtask_detail.fields.summary,
+                    "status":
+                    subtask_detail.fields.status.name,
+                    "assignee":
+                    subtask_detail.fields.assignee.displayName
+                    if subtask_detail.fields.assignee else None,
+                    "created":
+                    str(subtask_detail.fields.created),
+                    "updated":
+                    str(subtask_detail.fields.updated),
+                    "resolution_date":
+                    str(subtask_detail.fields.resolutiondate)
+                    if subtask_detail.fields.resolutiondate else None
                 })
 
                 subtask_total += 1
@@ -197,15 +207,19 @@ async def get_issue_details(issue_key: str):
                 # Categorize subtask status
                 if status_name in ['done', 'closed', 'resolved', 'completed']:
                     subtask_completed += 1
-                elif status_name in ['in progress', 'in review', 'testing', 'in development']:
+                elif status_name in [
+                        'in progress', 'in review', 'testing', 'in development'
+                ]:
                     subtask_in_progress += 1
                 else:
                     subtask_todo += 1
 
         # Calculate percentages
         if subtask_total > 0:
-            completed_percentage = round((subtask_completed / subtask_total) * 100, 2)
-            in_progress_percentage = round((subtask_in_progress / subtask_total) * 100, 2)
+            completed_percentage = round(
+                (subtask_completed / subtask_total) * 100, 2)
+            in_progress_percentage = round(
+                (subtask_in_progress / subtask_total) * 100, 2)
             todo_percentage = round((subtask_todo / subtask_total) * 100, 2)
         else:
             completed_percentage = in_progress_percentage = todo_percentage = 0.0
@@ -221,25 +235,44 @@ async def get_issue_details(issue_key: str):
 
         # Get backers from custom field
         backers = []
-        if hasattr(issue.fields, 'customfield_11421') and issue.fields.customfield_11421:
+        if hasattr(issue.fields,
+                   'customfield_11421') and issue.fields.customfield_11421:
             backers = issue.fields.customfield_11421
 
         return {
             "issue": {
-                "key": issue.key,
-                "summary": issue.fields.summary,
-                "description": issue.fields.description,
-                "status": issue.fields.status.name,
-                "issue_type": issue.fields.issuetype.name,
-                "priority": issue.fields.priority.name if issue.fields.priority else None,
-                "assignee": issue.fields.assignee.displayName if issue.fields.assignee else None,
-                "reporter": issue.fields.reporter.displayName if issue.fields.reporter else None,
-                "created": str(issue.fields.created),
-                "updated": str(issue.fields.updated),
-                "due_date": str(issue.fields.duedate) if issue.fields.duedate else None,
-                "resolution_date": str(issue.fields.resolutiondate) if issue.fields.resolutiondate else None,
-                "start_date": issue.fields.customfield_10015 if hasattr(issue.fields, 'customfield_10015') else None,
-                "backers": backers
+                "key":
+                issue.key,
+                "summary":
+                issue.fields.summary,
+                "description":
+                issue.fields.description,
+                "status":
+                issue.fields.status.name,
+                "issue_type":
+                issue.fields.issuetype.name,
+                "priority":
+                issue.fields.priority.name if issue.fields.priority else None,
+                "assignee":
+                issue.fields.assignee.displayName
+                if issue.fields.assignee else None,
+                "reporter":
+                issue.fields.reporter.displayName
+                if issue.fields.reporter else None,
+                "created":
+                str(issue.fields.created),
+                "updated":
+                str(issue.fields.updated),
+                "due_date":
+                str(issue.fields.duedate) if issue.fields.duedate else None,
+                "resolution_date":
+                str(issue.fields.resolutiondate)
+                if issue.fields.resolutiondate else None,
+                "start_date":
+                issue.fields.customfield_10015 if hasattr(
+                    issue.fields, 'customfield_10015') else None,
+                "backers":
+                backers
             },
             "subtasks": subtasks,
             "assignees": list(assignees),
@@ -254,7 +287,8 @@ async def get_issue_details(issue_key: str):
             }
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching issue details: {str(e)}")
+        raise HTTPException(status_code=500,
+                            detail=f"Error fetching issue details: {str(e)}")
 
 
 @app.post("/api/create-ticket/{project_key}")
@@ -262,12 +296,11 @@ async def create_ticket(project_key: str, request: dict):
     jira = get_jira_client()
 
     # Default reporter email - you can change this constant
-    DEFAULT_REPORTER_EMAIL = "jira-dashboard@example.com"
+    DEFAULT_REPORTER_EMAIL = "jira.automation@bizongo.com"
 
     try:
         # Get current user to set as first backer
-        current_user = jira.myself()
-        first_backer = current_user.get('displayName', current_user.get('emailAddress'))
+        first_backer = request.get('backer')
 
         # Determine issue type (default to Bug if not specified)
         issue_type = request.get('issue_type', 'Bug')
@@ -275,19 +308,26 @@ async def create_ticket(project_key: str, request: dict):
             issue_type = 'Story'
 
         issue_dict = {
-            'project': {'key': project_key},
+            'project': {
+                'key': project_key
+            },
             'summary': request.get('summary'),
             'description': request.get('description', ''),
-            'issuetype': {'name': issue_type},
-            'priority': {'name': request.get('priority', 'Medium')},
-            'reporter': {'name': DEFAULT_REPORTER_EMAIL},
-            visibility_custom_id: "Organisation",  # Visibility custom field
-            'customfield_11421': [first_backer]  # Backers field with creator as first backer
+            'issuetype': {
+                'name': issue_type
+            },
+            # 'priority': {'name': request.get('priority', 'Medium')},
+            # 'reporter': {'name': DEFAULT_REPORTER_EMAIL},
+            visibility_custom_id: {
+                'value': "Organisation"
+            },  # Visibility custom field
+            'customfield_11421':
+            [first_backer]  # Backers field with creator as first backer
         }
 
         # Add assignee if provided
-        if request.get('assignee'):
-            issue_dict['assignee'] = {'name': request.get('assignee')}
+        # if request.get('assignee'):
+        #     issue_dict['assignee'] = {'name': request.get('assignee')}
 
         # Add due date if provided
         if request.get('due_date'):
@@ -303,7 +343,9 @@ async def create_ticket(project_key: str, request: dict):
 
         # Add components if provided
         if request.get('components'):
-            issue_dict['components'] = [{'name': comp} for comp in request.get('components')]
+            issue_dict['components'] = [{
+                'name': comp
+            } for comp in request.get('components')]
 
         # Add labels if provided
         if request.get('labels'):
@@ -319,35 +361,40 @@ async def create_ticket(project_key: str, request: dict):
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error creating ticket: {str(e)}")
+        raise HTTPException(status_code=500,
+                            detail=f"Error creating ticket: {str(e)}")
 
 
 @app.post("/api/issue/{issue_key}/add-backers")
 async def add_backers(issue_key: str, request: dict):
     jira = get_jira_client()
-    
+
     try:
         # Get current issue to retrieve existing backers
         issue = jira.issue(issue_key)
-        
+
         # Get new backers from request (comma-separated string or list)
         new_backers = request.get('backers', '')
         if isinstance(new_backers, str):
-            new_backers_list = [email.strip() for email in new_backers.split(',') if email.strip()]
+            new_backers_list = [
+                email.strip() for email in new_backers.split(',')
+                if email.strip()
+            ]
         else:
             new_backers_list = new_backers
-        
+
         # Get existing backers
         existing_backers = []
-        if hasattr(issue.fields, 'customfield_11421') and issue.fields.customfield_11421:
+        if hasattr(issue.fields,
+                   'customfield_11421') and issue.fields.customfield_11421:
             existing_backers = issue.fields.customfield_11421
-        
+
         # Combine existing and new backers, removing duplicates
         all_backers = list(set(existing_backers + new_backers_list))
-        
+
         # Update the issue with new backers list
         issue.update(fields={'customfield_11421': all_backers})
-        
+
         return {
             "success": True,
             "message": f"Backers added to {issue_key}",
@@ -356,6 +403,7 @@ async def add_backers(issue_key: str, request: dict):
             "new_backers_added": len(new_backers_list),
             "all_backers": all_backers
         }
-        
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error adding backers to issue: {str(e)}")
+        raise HTTPException(status_code=500,
+                            detail=f"Error adding backers to issue: {str(e)}")
