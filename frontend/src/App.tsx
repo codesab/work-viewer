@@ -1,21 +1,22 @@
+import React from "react";
+import Issues from "./pages/Issues";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
-import React from 'react';
-import { Layout } from 'antd';
-import Issues from './pages/Issues';
+interface AppProps {
+  args: {
+    basePath: string;
+    history: any; // Ideally use History type from 'history' package
+  };
+}
 
-const { Header, Content } = Layout;
-
-const App: React.FC = () => {
-  return (
-    <Layout>
-      <Header style={{ color: 'white' }}>
-        
-      </Header>
-      <Content>
-        <Issues />
-      </Content>
-    </Layout>
-  );
+const App: React.FC<AppProps> = ({ args }) => {
+  return  <BrowserRouter>
+    <Routes>
+      <Route path="/" element={<Navigate to="/app/release/list" replace />} />
+      <Route path="/app/releases/:view?/:month?" element={<Issues basePath={args.basePath} history={null} />} />
+    </Routes>
+  </BrowserRouter>
+  //<Issues basePath={args.basePath} history={args.history} />;
 };
 
 export default App;
