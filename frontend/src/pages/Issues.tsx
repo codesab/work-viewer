@@ -39,7 +39,7 @@ const Issues: React.FC<IssuesProps> = ({ basePath, history }) => {
   const [pageSize] = useState(10);
   const [searchText, setSearchText] = useState("");
 
-  const { view } = useParams();
+  const { view, month } = useParams();
   const selectedView = view === "calendar" || view === "list" ? view : "list";
   const [viewMode, setViewMode] = useState<"list" | "calendar">(selectedView);
   const [total, setTotal] = useState<number>(0);
@@ -47,7 +47,7 @@ const Issues: React.FC<IssuesProps> = ({ basePath, history }) => {
   const navigate = useNavigate();
 
   const [currentMonth, setCurrentMonth] = useState<string>(
-    dayjs().format("YYYY-MM")
+    month || dayjs().format("YYYY-MM")
   );
   const projectKey = "PHNX";
 
@@ -105,6 +105,14 @@ const Issues: React.FC<IssuesProps> = ({ basePath, history }) => {
     fetchIssues(currentMonth);
   }, [issueType, page, currentMonth]);
 
+  const handleMonthChange = (month: string) => {
+  setPage(1);
+  setIssues(null); // this works now because state is here
+  setCurrentMonth(month);
+  navigate(`/app/releases/${viewMode}/${month}`);
+};
+
+
   return (
     <div style={{padding: 24}}>
       <IssuesHeader
@@ -145,6 +153,7 @@ const Issues: React.FC<IssuesProps> = ({ basePath, history }) => {
               issues={issues?.items || []}
               currentMonth={currentMonth}
               setCurrentMonth={setCurrentMonth}
+              onMonthChange={handleMonthChange}
               page={page}
               setPage={setPage}
               loading={loading}

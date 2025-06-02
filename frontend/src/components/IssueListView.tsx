@@ -25,7 +25,8 @@ interface Props {
   loading: boolean;
   total: number;
   pageSize: number;
-  fetchIssueDetails:any;
+  fetchIssueDetails: any;
+  onMonthChange: (month: string) => void; // new prop
 }
 
 const IssueListView: React.FC<Props> = ({
@@ -37,7 +38,8 @@ const IssueListView: React.FC<Props> = ({
   loading,
   total,
   pageSize,
-  fetchIssueDetails
+  fetchIssueDetails,
+  onMonthChange
 }) => {
   const allLoaded = issues.length >= total;
   const generateMonthRange = (current: string) => {
@@ -47,14 +49,19 @@ const IssueListView: React.FC<Props> = ({
     );
   };
 
-  const groupedByMonth = issues.reduce((acc, issue) => {
-    const monthKey = dayjs(issue.due_date || issue.start_date).format(
-      "YYYY-MM"
-    );
-    acc[monthKey] = acc[monthKey] || [];
-    acc[monthKey].push(issue);
-    return acc;
-  }, {} as Record<string, JiraIssue[]>);
+  const filteredIssues = issues.filter((issue) => {
+    const month = dayjs(issue.due_date || issue.start_date).format("YYYY-MM");
+    return month === currentMonth;
+  });
+
+  // const groupedByMonth = filteredIssues.reduce((acc, issue) => {
+  //   const monthKey = dayjs(issue.due_date || issue.start_date).format(
+  //     "YYYY-MM"
+  //   );
+  //   acc[monthKey] = acc[monthKey] || [];
+  //   acc[monthKey].push(issue);
+  //   return acc;
+  // }, {} as Record<string, JiraIssue[]>);
 
   const MonthScroller = ({
     currentMonth,
@@ -89,7 +96,12 @@ const IssueListView: React.FC<Props> = ({
   return (
     <Row gutter={16}>
       <Col span={4}>
-        <MonthScroller currentMonth={currentMonth} onChange={setCurrentMonth} />
+        <MonthScroller
+          currentMonth={currentMonth}
+          onChange={(month) => {
+    onMonthChange(month); // delegate
+  }}
+        />
       </Col>
       <Col
         span={20}
@@ -109,8 +121,8 @@ const IssueListView: React.FC<Props> = ({
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
             >
-              {Object.entries(groupedByMonth).map(([month, monthIssues]) => (
-                <div key={month}>
+              {filteredIssues.length > 0 && (
+                <div>
                   <div
                     style={{
                       position: "sticky",
@@ -122,13 +134,13 @@ const IssueListView: React.FC<Props> = ({
                     }}
                   >
                     <Typography.Title level={5} style={{ margin: 0 }}>
-                      {dayjs(month).format("MMMM YYYY")}
+                      {dayjs(currentMonth).format("MMMM YYYY")}
                     </Typography.Title>
                   </div>
 
                   <List
                     itemLayout="horizontal"
-                    dataSource={monthIssues}
+                    dataSource={filteredIssues}
                     renderItem={(issue) => (
                       <IssueListItem
                         key={issue.key}
@@ -138,7 +150,7 @@ const IssueListView: React.FC<Props> = ({
                     )}
                   />
                 </div>
-              ))}
+              )}
               {loading && page > 1 ? (
                 <div style={{ textAlign: "center", padding: 16 }}>
                   <Spin tip="Loading more issues..." />

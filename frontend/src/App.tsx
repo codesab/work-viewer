@@ -1,6 +1,6 @@
 import React from "react";
 import Issues from "./pages/Issues";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 interface AppProps {
   args: {
@@ -12,7 +12,8 @@ interface AppProps {
 const App: React.FC<AppProps> = ({ args }) => {
   return  <BrowserRouter>
     <Routes>
-      <Route path="/app/releases/:view?" element={<Issues basePath={args.basePath} history={null} />} />
+      <Route path="/" element={<Navigate to="/app/release/list" replace />} />
+      <Route path="/app/releases/:view?/:month?" element={<Issues basePath={args.basePath} history={null} />} />
     </Routes>
   </BrowserRouter>
   //<Issues basePath={args.basePath} history={args.history} />;

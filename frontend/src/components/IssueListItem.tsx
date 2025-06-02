@@ -9,6 +9,7 @@ import {
   getStatusColor,
   getTagColor,
 } from "../utils";
+import { CalendarOutlined, CheckCircleOutlined, WarningFilled } from "@ant-design/icons";
 
 interface Props {
   issue: JiraIssue;
@@ -51,19 +52,30 @@ const IssueListItem: React.FC<Props> = ({ issue, onClick }) => {
         }
         description={
           <Space>
-            {issue.due_date
-              ? `Due ${
-                  dayjs(issue.due_date).isBefore(dayjs(), "day")
-                    ? `overdue by ${dayjs().diff(issue.due_date, "day")} day(s)`
-                    : dayjs(issue.due_date).isSame(dayjs(), "day")
-                    ? "today"
-                    : `in ${dayjs(issue.due_date).diff(dayjs(), "day")} day(s)`
-                }`
-              : "No due date"}
-            {isDelayed && (
-              <Tooltip title="Delayed">
-                <Badge status="error" text="Overdue" />
-              </Tooltip>
+            {issue.due_date ? (
+              issue.status.toLowerCase() === "done" ? (
+                dayjs(issue.due_date).isBefore(dayjs(), "day") ? (
+                  <Typography.Text type="secondary">
+                    <WarningFilled color="warning"/> Shipped {dayjs().diff(issue.due_date, "day")} day(s) late
+                  </Typography.Text>
+                ) : (
+                  <Typography.Text type="secondary">
+                    <CheckCircleOutlined color="success" /> Completed on time
+                  </Typography.Text>
+                )
+              ) : dayjs(issue.due_date).isBefore(dayjs(), "day") ? (
+                <Typography.Text type="danger">
+                  <WarningFilled color="danger"/> Overdue by {dayjs().diff(issue.due_date, "day")} day(s)
+                </Typography.Text>
+              ) : dayjs(issue.due_date).isSame(dayjs(), "day") ? (
+                <Typography.Text><CalendarOutlined color="blue" /> Due today</Typography.Text>
+              ) : (
+                <Typography.Text type="secondary">
+                  <CalendarOutlined />  Due in {dayjs(issue.due_date).diff(dayjs(), "day")} day(s)
+                </Typography.Text>
+              )
+            ) : (
+              <Typography.Text type="secondary">No due date</Typography.Text>
             )}
           </Space>
         }
