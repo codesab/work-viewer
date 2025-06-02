@@ -318,7 +318,7 @@ async def create_ticket(project_key: str, request: dict):
             },
             # 'priority': {'name': request.get('priority', 'Medium')},
             # 'reporter': {'name': DEFAULT_REPORTER_EMAIL},
-            visibility_custom_id: {
+            'customfield_11357': {
                 'value': "Organisation"
             },  # Visibility custom field
             'customfield_11421':
