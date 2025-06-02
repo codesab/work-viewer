@@ -63,6 +63,7 @@ class IssueDetail(BaseModel):
     due_date: Optional[str] = None
     resolution_date: Optional[str] = None
     start_date: Optional[str] = None
+    backers: Optional[List[str]] = None
 
 class IssueDetailsResponse(BaseModel):
     issue: IssueDetail

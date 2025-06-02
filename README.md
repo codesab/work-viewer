@@ -142,7 +142,8 @@ cd backend && uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
     "updated": "2024-01-20T15:30:00.000Z",
     "due_date": "2024-01-30",
     "resolution_date": null,
-    "start_date": "2024-01-15"
+    "start_date": "2024-01-15",
+    "backers": ["john.doe@company.com", "jane.smith@company.com", "alice.johnson@company.com"]
   },
   "subtasks": [
     {

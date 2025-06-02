@@ -219,6 +219,11 @@ async def get_issue_details(issue_key: str):
             if subtask["assignee"]:
                 assignees.add(subtask["assignee"])
 
+        # Get backers from custom field
+        backers = []
+        if hasattr(issue.fields, 'customfield_11421') and issue.fields.customfield_11421:
+            backers = issue.fields.customfield_11421
+
         return {
             "issue": {
                 "key": issue.key,
@@ -233,7 +238,8 @@ async def get_issue_details(issue_key: str):
                 "updated": str(issue.fields.updated),
                 "due_date": str(issue.fields.duedate) if issue.fields.duedate else None,
                 "resolution_date": str(issue.fields.resolutiondate) if issue.fields.resolutiondate else None,
-                "start_date": issue.fields.customfield_10015 if hasattr(issue.fields, 'customfield_10015') else None
+                "start_date": issue.fields.customfield_10015 if hasattr(issue.fields, 'customfield_10015') else None,
+                "backers": backers
             },
             "subtasks": subtasks,
             "assignees": list(assignees),
