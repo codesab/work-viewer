@@ -87,3 +87,14 @@ class CreateTicketResponse(BaseModel):
     issue_key: str
     message: str
     issue_url: str
+
+class AddBackersRequest(BaseModel):
+    backers: str  # Comma-separated email addresses
+
+class AddBackersResponse(BaseModel):
+    success: bool
+    message: str
+    issue_key: str
+    total_backers: int
+    new_backers_added: int
+    all_backers: List[str]

@@ -314,3 +314,42 @@ async def create_ticket(project_key: str, request: dict):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating ticket: {str(e)}")
+
+
+@app.post("/api/issue/{issue_key}/add-backers")
+async def add_backers(issue_key: str, request: dict):
+    jira = get_jira_client()
+    
+    try:
+        # Get current issue to retrieve existing backers
+        issue = jira.issue(issue_key)
+        
+        # Get new backers from request (comma-separated string or list)
+        new_backers = request.get('backers', '')
+        if isinstance(new_backers, str):
+            new_backers_list = [email.strip() for email in new_backers.split(',') if email.strip()]
+        else:
+            new_backers_list = new_backers
+        
+        # Get existing backers
+        existing_backers = []
+        if hasattr(issue.fields, 'customfield_11421') and issue.fields.customfield_11421:
+            existing_backers = issue.fields.customfield_11421
+        
+        # Combine existing and new backers, removing duplicates
+        all_backers = list(set(existing_backers + new_backers_list))
+        
+        # Update the issue with new backers list
+        issue.update(fields={'customfield_11421': all_backers})
+        
+        return {
+            "success": True,
+            "message": f"Backers added to {issue_key}",
+            "issue_key": issue_key,
+            "total_backers": len(all_backers),
+            "new_backers_added": len(new_backers_list),
+            "all_backers": all_backers
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error adding backers to issue: {str(e)}")
