@@ -4,6 +4,11 @@ from jira import JIRA
 from .config import settings
 from typing import Dict, Optional
 import datetime
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="JIRA Dashboard API")
 visibility_custom_id = "cf[11357]"  # Replace with the actual ID
@@ -376,52 +381,105 @@ async def add_backers(issue_key: str, request: dict):
     jira = get_jira_client()
 
     try:
+        logger.info(f"=== ADD BACKERS REQUEST ===")
+        logger.info(f"Issue Key: {issue_key}")
+        logger.info(f"Request payload: {request}")
+        
         # Get current issue to retrieve existing backers
         issue = jira.issue(issue_key)
+        
+        # Log current field value and type
+        existing_backers_raw = getattr(issue.fields, 'customfield_11421', None)
+        logger.info(f"Current backers field (customfield_11421):")
+        logger.info(f"  Type: {type(existing_backers_raw)}")
+        logger.info(f"  Value: {repr(existing_backers_raw)}")
 
-        # Get new backers from request (can be single string, comma-separated string, or list)
+        # Get new backers from request
         new_backers_input = request.get('backers', '')
-        new_backers_list = []
+        logger.info(f"New backers input: {repr(new_backers_input)} (type: {type(new_backers_input)})")
         
+        # Since it's a paragraph field, treat it as text
         if isinstance(new_backers_input, str):
-            if ',' in new_backers_input:
-                # Comma-separated string - split and clean
-                new_backers_list = [
-                    email.strip() for email in new_backers_input.split(',')
-                    if email.strip()
-                ]
-            else:
-                # Single email string
-                if new_backers_input.strip():
-                    new_backers_list = [new_backers_input.strip()]
+            new_backers_text = new_backers_input.strip()
         elif isinstance(new_backers_input, list):
-            # Already a list
-            new_backers_list = [email.strip() for email in new_backers_input if email.strip()]
+            # Join list items with newlines for paragraph field
+            new_backers_text = '\n'.join([str(item).strip() for item in new_backers_input if str(item).strip()])
+        else:
+            new_backers_text = str(new_backers_input).strip()
         
-        # Get existing backers
-        existing_backers = []
-        if hasattr(issue.fields,
-                   'customfield_11421') and issue.fields.customfield_11421:
-            existing_backers = issue.fields.customfield_11421
+        logger.info(f"Processed new backers text: {repr(new_backers_text)}")
+        
+        # Get existing backers text
+        existing_backers_text = ""
+        if existing_backers_raw:
+            if isinstance(existing_backers_raw, str):
+                existing_backers_text = existing_backers_raw
+            elif isinstance(existing_backers_raw, list):
+                existing_backers_text = '\n'.join([str(item) for item in existing_backers_raw])
+            else:
+                existing_backers_text = str(existing_backers_raw)
+        
+        logger.info(f"Existing backers text: {repr(existing_backers_text)}")
+        
+        # Combine existing and new backers
+        if existing_backers_text and new_backers_text:
+            combined_backers_text = existing_backers_text + '\n' + new_backers_text
+        elif new_backers_text:
+            combined_backers_text = new_backers_text
+        else:
+            combined_backers_text = existing_backers_text
+            
+        logger.info(f"Combined backers text: {repr(combined_backers_text)}")
 
-        # Combine existing and new backers, removing duplicates while preserving order
-        all_backers = existing_backers[:]  # Copy existing list
-        for backer in new_backers_list:
-            if backer not in all_backers:
-                all_backers.append(backer)
+        # Update the issue with new backers text
+        logger.info(f"Attempting to update issue {issue_key} with backers field...")
+        
+        try:
+            # Try updating with the combined text
+            update_payload = {'customfield_11421': combined_backers_text}
+            logger.info(f"Update payload: {update_payload}")
+            
+            issue.update(fields=update_payload)
+            logger.info("Update successful!")
+            
+        except Exception as update_error:
+            logger.error(f"Update failed: {update_error}")
+            logger.info("Trying alternative update methods...")
+            
+            # Try with different formats
+            try:
+                issue.update(update={'customfield_11421': [{'set': combined_backers_text}]})
+                logger.info("Alternative update method 1 successful!")
+            except Exception as alt_error:
+                logger.error(f"Alternative update method failed: {alt_error}")
+                raise update_error
 
-        # Update the issue with new backers list
-        issue.update(fields={'customfield_11421': all_backers})
+        # Refresh the issue to get the updated data
+        logger.info("Refreshing issue to verify update...")
+        updated_issue = jira.issue(issue_key)
+        final_backers = getattr(updated_issue.fields, 'customfield_11421', None)
+        
+        logger.info(f"Final backers field after update:")
+        logger.info(f"  Type: {type(final_backers)}")
+        logger.info(f"  Value: {repr(final_backers)}")
 
         return {
             "success": True,
             "message": f"Backers added to {issue_key}",
             "issue_key": issue_key,
-            "total_backers": len(all_backers),
-            "new_backers_added": len(new_backers_list),
-            "all_backers": all_backers
+            "new_backers_added": new_backers_text,
+            "final_backers": final_backers,
+            "debug": {
+                "original_input": new_backers_input,
+                "processed_text": new_backers_text,
+                "existing_text": existing_backers_text,
+                "combined_text": combined_backers_text,
+                "field_type_before": type(existing_backers_raw),
+                "field_type_after": type(final_backers)
+            }
         }
 
     except Exception as e:
+        logger.error(f"Error in add_backers: {str(e)}")
         raise HTTPException(status_code=500,
                             detail=f"Error adding backers to issue: {str(e)}")
