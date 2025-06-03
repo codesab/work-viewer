@@ -379,24 +379,36 @@ async def add_backers(issue_key: str, request: dict):
         # Get current issue to retrieve existing backers
         issue = jira.issue(issue_key)
 
-        # Get new backers from request (comma-separated string or list)
-        new_backers = request.get('backers', '')
-        if isinstance(new_backers, str):
-            new_backers_list = [
-                email.strip() for email in new_backers.split(',')
-                if email.strip()
-            ]
-        else:
-            new_backers_list = new_backers
-
+        # Get new backers from request (can be single string, comma-separated string, or list)
+        new_backers_input = request.get('backers', '')
+        new_backers_list = []
+        
+        if isinstance(new_backers_input, str):
+            if ',' in new_backers_input:
+                # Comma-separated string - split and clean
+                new_backers_list = [
+                    email.strip() for email in new_backers_input.split(',')
+                    if email.strip()
+                ]
+            else:
+                # Single email string
+                if new_backers_input.strip():
+                    new_backers_list = [new_backers_input.strip()]
+        elif isinstance(new_backers_input, list):
+            # Already a list
+            new_backers_list = [email.strip() for email in new_backers_input if email.strip()]
+        
         # Get existing backers
         existing_backers = []
         if hasattr(issue.fields,
                    'customfield_11421') and issue.fields.customfield_11421:
             existing_backers = issue.fields.customfield_11421
 
-        # Combine existing and new backers, removing duplicates
-        all_backers = list(set(existing_backers + new_backers_list))
+        # Combine existing and new backers, removing duplicates while preserving order
+        all_backers = existing_backers[:]  # Copy existing list
+        for backer in new_backers_list:
+            if backer not in all_backers:
+                all_backers.append(backer)
 
         # Update the issue with new backers list
         issue.update(fields={'customfield_11421': all_backers})

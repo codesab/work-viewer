@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Union
 
 class TicketBase(BaseModel):
     key: str
@@ -90,7 +90,7 @@ class CreateTicketResponse(BaseModel):
     issue_url: str
 
 class AddBackersRequest(BaseModel):
-    backers: str  # Comma-separated email addresses
+    backers: Union[str, List[str]]  # Single email, comma-separated emails, or list of emails
 
 class AddBackersResponse(BaseModel):
     success: bool
