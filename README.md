@@ -230,14 +230,21 @@ cd backend && uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
 #### 8. Add Backers to Issue
 **POST** `/api/issue/{issue_key}/add-backers`
 
-**Request Body:**
+**Request Body (single email):**
+```json
+{
+  "backers": "user@company.com"
+}
+```
+
+**Request Body (comma-separated emails):**
 ```json
 {
   "backers": "user1@company.com, user2@company.com, user3@company.com"
 }
 ```
 
-**Alternative Request Body (array format):**
+**Request Body (array format):**
 ```json
 {
   "backers": ["user1@company.com", "user2@company.com", "user3@company.com"]
