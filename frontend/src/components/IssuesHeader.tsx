@@ -4,7 +4,9 @@ import {
   PlusOutlined,
 } from "@ant-design/icons";
 import { Row, Col, Typography, Space, Segmented, Button, Tooltip } from "antd";
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import CreateIssueModal from "./CreateIssueModal";
 
 const { Title } = Typography;
 
@@ -16,8 +18,11 @@ const IssuesHeader = ({
   onViewChange: (val: "list" | "calendar") => void;
 }) => {
   const navigate = useNavigate();
+  const [openCreateModal, setOpenCreateModal] = useState(false);
 
   return (
+    <>
+    
     <Row align="middle" justify="space-between" style={{ marginBottom: 16 }}>
       <Col>
         <Title level={3} style={{ margin: 0 }}>
@@ -42,13 +47,17 @@ const IssuesHeader = ({
             }}
           />
           <Tooltip title="Coming soon!">
-            <Button type="primary" icon={<PlusOutlined />} disabled>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpenCreateModal(true)}>
               Report New
             </Button>
           </Tooltip>
         </Space>
       </Col>
     </Row>
+    <CreateIssueModal visible={openCreateModal} onClose={ () => {
+        console.log('modal closed')
+      } } projectKey={"PHNX"}/>
+    </>
   );
 };
 
