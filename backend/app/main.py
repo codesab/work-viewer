@@ -474,8 +474,8 @@ async def add_backers(issue_key: str, request: dict):
                 "processed_text": new_backers_text,
                 "existing_text": existing_backers_text,
                 "combined_text": combined_backers_text,
-                "field_type_before": type(existing_backers_raw),
-                "field_type_after": type(final_backers)
+                "field_type_before": str(type(existing_backers_raw)),
+                "field_type_after": str(type(final_backers))
             }
         }
 
