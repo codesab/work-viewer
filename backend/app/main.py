@@ -89,7 +89,8 @@ async def get_issues(
         size: int = 10,
         sort_by: str = "key",
         sort_order: str = "asc",
-        month: Optional[str] = None):
+        month: Optional[str] = None,
+        search: Optional[str] = None):
     jira = get_jira_client()
     try:
         start_at = (page - 1) * size
@@ -113,6 +114,11 @@ async def get_issues(
             except ValueError:
                 print(f"Invalid month format from client: {month}")
         # If no month is provided, no dueDate filter is applied
+        
+        if search:
+            # Escape quotes in search term to prevent JQL injection
+            escaped_search = search.replace('"', '\\"')
+            jql_parts.append(f'summary ~ "{escaped_search}"')
 
         jql = ' AND '.join(jql_parts) + f' ORDER BY {sort_by} {sort_order}'
         issues = jira.search_issues(jql, startAt=start_at, maxResults=size)

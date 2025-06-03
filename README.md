@@ -1,4 +1,3 @@
-
 # JIRA Dashboard API
 
 A FastAPI-based backend service for managing JIRA issues with a comprehensive set of APIs for creating, retrieving, and managing tickets.
@@ -96,8 +95,9 @@ cd backend && uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
 - `sort_by` (str, default: "key") - Sort field
 - `sort_order` (str, default: "asc") - Sort order (asc/desc)
 - `month` (str, optional) - Filter by month (YYYY-MM format)
+- `search` (optional): Search term to filter issues by summary
 
-**Example:** `GET /api/issues/PROJ?page=1&size=5&month=2024-01`
+**Example:** `GET /api/issues/PROJ?page=1&size=5&sort_by=key&sort_order=desc&month=2024-01&search=authentication`
 
 **Response:**
 ```json
@@ -295,4 +295,3 @@ All endpoints return appropriate HTTP status codes and error messages:
 {
   "detail": "Error message describing what went wrong"
 }
-```
