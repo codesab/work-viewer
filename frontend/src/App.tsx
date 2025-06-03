@@ -1,6 +1,7 @@
 import React from "react";
 import Issues from "./pages/Issues";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import './App.css';
 
 interface AppProps {
   args: {

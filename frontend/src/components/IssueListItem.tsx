@@ -47,12 +47,12 @@ const IssueListItem: React.FC<Props> = ({ issue, onClick }) => {
             >
               {issue.key}
             </Tag>
-            <Typography.Text>{issue.title}</Typography.Text>
+            <Typography.Text delete={issue.status === 'Not Required'}>{issue.title}</Typography.Text>
           </Space>
         }
         description={
           <Space>
-            {issue.due_date ? (
+            {issue.due_date && issue.status !== "Not Required" ? (
               issue.status.toLowerCase() === "done" ? (
                 dayjs(issue.due_date).isBefore(dayjs(), "day") ? (
                   <Typography.Text type="secondary">

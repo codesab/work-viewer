@@ -10,10 +10,11 @@ import {
   Typography,
   Space,
   List,
+  Spin,
 } from "antd";
 import axios from "axios";
 import { getIcon } from "../utils";
-import { SearchOutlined, EyeOutlined, LikeOutlined } from "@ant-design/icons";
+import { SearchOutlined, EyeOutlined, LikeOutlined, LoadingOutlined } from "@ant-design/icons";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -23,6 +24,7 @@ interface CreateIssueModalProps {
   onClose: () => void;
   projectKey: string;
   onSuccess?: () => void;
+  setSelectedIssue: (issueKey: string) => void;
 }
 
 const issueTypes = [
@@ -37,29 +39,43 @@ const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
   onClose,
   projectKey,
   onSuccess,
+  setSelectedIssue,
 }) => {
   const [loading, setLoading] = useState(false);
+  const [queryLoading, setQueryLoading] = useState(false);
+  const [backerLoading, setBackerLoading] = useState(false);
   const [form] = Form.useForm();
   const [matchedIssues, setMatchedIssues] = useState<any[]>([]);
   const [summaryQuery, setSummaryQuery] = useState("");
 
   useEffect(() => {
+    setQueryLoading(true);
     const timeout = setTimeout(() => {
       if (summaryQuery.length >= 3) {
-        // Call match API
         axios
-          .get(`${process.env.REACT_APP_JIRA_SERVICE_URL}/api/search-issues`, {
-            params: { q: summaryQuery },
-          })
-          .then((res) => setMatchedIssues(res.data || []))
-          .catch(() => setMatchedIssues([]));
+          .get(
+            `${process.env.REACT_APP_JIRA_SERVICE_URL}/api/issues/${projectKey}`,
+            {
+              params: {
+                page: 1,
+                size: 5,
+                sort_by: "key",
+                sort_order: "desc",
+                search: summaryQuery,
+              },
+            }
+          )
+          .then((res) => setMatchedIssues(res.data.items || []))
+          .catch(() => setMatchedIssues([]))
+          .finally(() => setQueryLoading(false))
       } else {
+        setQueryLoading(false);
         setMatchedIssues([]);
       }
-    }, 500); // debounce
+    }, 500);
 
     return () => clearTimeout(timeout);
-  }, [summaryQuery]);
+  }, [summaryQuery, projectKey]);
 
   const handleOk = async () => {
     try {
@@ -86,18 +102,32 @@ const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
   };
 
   const handleBack = async (issueKey: string) => {
+    setBackerLoading(true);
     await axios.post(
-      `${process.env.REACT_APP_JIRA_SERVICE_URL}/api/back-issue/${issueKey}`
+      `${process.env.REACT_APP_JIRA_SERVICE_URL}/api/issue/${issueKey}/add-backers`,
+      {
+        backers: [localStorage.getItem("email")],
+      }
     );
     message.success("You've backed the issue");
+    setBackerLoading(false);
     onClose();
+  };
+
+  const handleViewIssue = (issueKey: string) => {
+    setSelectedIssue(issueKey); // Set the selected issue
+    onClose(); // Close the modal
   };
 
   return (
     <Modal
       title="Create Issue"
       open={visible}
-      onCancel={onClose}
+      onCancel={() => {
+        form.resetFields(); // Reset form fields
+        setMatchedIssues([]); // Clear matched issues
+        onClose(); // Call the original onClose handler
+      }}
       onOk={handleOk}
       confirmLoading={loading}
       okText="Create"
@@ -129,23 +159,24 @@ const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
             onChange={(e) => {
               setSummaryQuery(e.target.value);
             }}
-            prefix={<SearchOutlined />}
+            prefix={queryLoading ? <Spin indicator={<LoadingOutlined size={4}/>}/> : <SearchOutlined />}
           />
         </Form.Item>
 
+        {queryLoading && <Text type={'secondary'}>Searching for matching issues.. </Text>}
+
         {matchedIssues.length > 0 && (
-          <Form.Item wrapperCol={{ offset: 6, span: 18 }}>
+          <Form.Item wrapperCol={{ span: 24 }}>
             <Text type="secondary">Possible matches:</Text>
             <List
               size="small"
               dataSource={matchedIssues}
-              style={{ marginTop: 8 }}
               renderItem={(item: any) => (
                 <List.Item
                   actions={[
                     <Button
                       size="small"
-                      icon={<LikeOutlined />}
+                      icon={backerLoading ? <Spin indicator={<LoadingOutlined size={4} />}/> : <LikeOutlined />}
                       onClick={() => handleBack(item.key)}
                     >
                       Back
@@ -153,43 +184,45 @@ const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
                     <Button
                       size="small"
                       icon={<EyeOutlined />}
-                      onClick={() =>
-                        window.open(`/browse/${item.key}`, "_blank")
-                      }
+                      onClick={() => handleViewIssue}
                     >
                       View
                     </Button>,
                   ]}
                 >
-                  <Text>{item.summary}</Text>
+                  <Text>{item.title}</Text>
                 </List.Item>
               )}
             />
           </Form.Item>
         )}
 
-        <Form.Item
-          name="description"
-          label="Description"
-          rules={[{ required: true, message: "Please enter description" }]}
-        >
-          <Input.TextArea rows={4} />
-        </Form.Item>
+        {matchedIssues.length === 0 && (
+          <>
+            <Form.Item
+              name="description"
+              label="Description"
+              rules={[{ required: true, message: "Please enter description" }]}
+            >
+              <Input.TextArea rows={4} />
+            </Form.Item>
 
-        <Form.Item
-          name="priority"
-          label="Priority"
-          initialValue="Medium"
-          rules={[{ required: true, message: "Please select priority" }]}
-        >
-          <Select>
-            {priorities.map((priority) => (
-              <Option value={priority} key={priority}>
-                {priority}
-              </Option>
-            ))}
-          </Select>
-        </Form.Item>
+            <Form.Item
+              name="priority"
+              label="Priority"
+              initialValue="Medium"
+              rules={[{ required: true, message: "Please select priority" }]}
+            >
+              <Select>
+                {priorities.map((priority) => (
+                  <Option value={priority} key={priority}>
+                    {priority}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </>
+        )}
       </Form>
     </Modal>
   );

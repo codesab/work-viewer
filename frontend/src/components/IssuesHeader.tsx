@@ -10,13 +10,17 @@ import CreateIssueModal from "./CreateIssueModal";
 
 const { Title } = Typography;
 
+interface IssuesHeaderProps {
+  selectedView: "list" | "calendar";
+  onViewChange: (val: "list" | "calendar") => void;
+  setSelectedIssue: (issueKey: string) => void;
+}
+
 const IssuesHeader = ({
   selectedView,
   onViewChange,
-}: {
-  selectedView: "list" | "calendar";
-  onViewChange: (val: "list" | "calendar") => void;
-}) => {
+  setSelectedIssue
+}: IssuesHeaderProps) => {
   const navigate = useNavigate();
   const [openCreateModal, setOpenCreateModal] = useState(false);
 
@@ -54,9 +58,14 @@ const IssuesHeader = ({
         </Space>
       </Col>
     </Row>
-    <CreateIssueModal visible={openCreateModal} onClose={ () => {
-        console.log('modal closed')
-      } } projectKey={"PHNX"}/>
+    <CreateIssueModal
+        visible={openCreateModal}
+        onClose={() => {
+          setOpenCreateModal(false); 
+        }}
+        projectKey={"PHNX"}
+        setSelectedIssue={setSelectedIssue}
+      />
     </>
   );
 };

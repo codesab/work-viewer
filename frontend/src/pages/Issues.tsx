@@ -115,11 +115,12 @@ const Issues: React.FC<IssuesProps> = ({ basePath, history }) => {
 
 
   return (
-    <div style={{padding: 24}}>
+    <div style={{padding: 24}} className="app-releases">
       <IssuesHeader
         selectedView={selectedView}
-        onViewChange={(val) => navigate(`/app/releases/${val}`)}
-      />
+        onViewChange={(val) => navigate(`/app/releases/${val}`)} 
+        setSelectedIssue={(issueKey: string) => fetchIssueDetails(issueKey)}      
+        />
       <Row gutter={24}>
         {/* <Space
         style={{

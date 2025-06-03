@@ -135,6 +135,56 @@ const IssuePreviewer: React.FC<Props> = (props: Props) => {
 
           <Space direction={"vertical"}>
             <Text type="secondary">
+              <UserOutlined /> Backers
+            </Text>
+            <Space>
+              {issue.backers && issue.backers.length > 0 ? (
+                <Avatar.Group max={{ count: 5 }}>
+                  {issue.backers.map((backer: string) => (
+                    <Avatar key={backer} style={{ backgroundColor: "#7265e6" }}>
+                      {getInitials(backer)}
+                    </Avatar>
+                  ))}
+                </Avatar.Group>
+              ) : (
+                <Text type="secondary">No backers</Text>
+              )}
+                {issue.backers && issue.backers.length > 2 && (
+                <Text type="secondary" style={{ marginLeft: 8 }}>
+                  {(() => {
+                  const lastTwo = issue.backers!.slice(-2);
+                  const names = lastTwo.map((email: string) => {
+                    const firstName = email.split(".")[0];
+                    return firstName.charAt(0).toUpperCase() + firstName.slice(1);
+                  });
+                  const others = issue.backers!.length - 2;
+                  return `${names.join(", ")} and ${others} others`;
+                  })()}
+                </Text>
+                )}
+                {issue.backers && issue.backers.length === 2 && (
+                <Text type="secondary" style={{ marginLeft: 8 }}>
+                  {issue.backers
+                  .map((email: string) => {
+                    const firstName = email.split(".")[0];
+                    return firstName.charAt(0).toUpperCase() + firstName.slice(1);
+                  })
+                  .join(" and ")}
+                </Text>
+                )}
+                {issue.backers && issue.backers.length === 1 && (
+                <Text type="secondary" style={{ marginLeft: 8 }}>
+                  {(() => {
+                  const firstName = issue.backers[0].split(".")[0];
+                  return firstName.charAt(0).toUpperCase() + firstName.slice(1);
+                  })()}
+                </Text>
+                )}
+            </Space>
+          </Space>
+
+          <Space direction={"vertical"}>
+            <Text type="secondary">
               <CalendarOutlined /> Due Date
             </Text>
             <div>
