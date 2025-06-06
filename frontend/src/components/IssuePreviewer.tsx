@@ -125,14 +125,16 @@ const IssuePreviewer: React.FC<Props> = (props: Props) => {
             <Text type="secondary">
               <UserOutlined /> Assignee
             </Text>
+              {issue.assignee ? (
             <Space>
               <Avatar style={{ backgroundColor: "#7265e6" }}>
                 {getInitials(issue.assignee)}
               </Avatar>
               <Text>{issue.assignee}</Text>
-            </Space>
+            </Space>) : (
+            <Text type="secondary">Unassigned</Text>
+              )}
           </Space>
-
           <Space direction={"vertical"}>
             <Text type="secondary">
               <UserOutlined /> Backers

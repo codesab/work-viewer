@@ -14,7 +14,12 @@ import {
 } from "antd";
 import axios from "axios";
 import { getIcon } from "../utils";
-import { SearchOutlined, EyeOutlined, LikeOutlined, LoadingOutlined } from "@ant-design/icons";
+import {
+  SearchOutlined,
+  EyeOutlined,
+  LikeOutlined,
+  LoadingOutlined,
+} from "@ant-design/icons";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -27,10 +32,13 @@ interface CreateIssueModalProps {
   setSelectedIssue: (issueKey: string) => void;
 }
 
-const issueTypes = [
-  { label: "Feature Request", value: "feature", icon: getIcon("story") },
-  { label: "Bug", value: "bug", icon: getIcon("bug") },
-];
+type IssueType = {
+  label: string;
+  id: string;
+  name: string;
+  value: string;
+  icon: React.ReactNode;
+};
 
 const priorities = ["Highest", "High", "Medium", "Low", "Lowest"];
 
@@ -43,10 +51,33 @@ const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [queryLoading, setQueryLoading] = useState(false);
-  const [backerLoading, setBackerLoading] = useState(false);
+  const [backerLoading, setBackerLoading] = useState<{
+    [key: string]: boolean;
+  }>({});
   const [form] = Form.useForm();
   const [matchedIssues, setMatchedIssues] = useState<any[]>([]);
   const [summaryQuery, setSummaryQuery] = useState("");
+  const [issueTypes, setIssueTypes] = useState<IssueType[]>([]);
+  const [issueTypesLoading, setIssueTypesLoading] = useState(true);
+
+  useEffect(() => {
+    if (!projectKey) return;
+    setIssueTypesLoading(true);
+    axios
+      .get(
+        `${process.env.REACT_APP_JIRA_SERVICE_URL}/api/project/${projectKey}/issue-types`
+      )
+      .then((res) => {
+        const filtered = filterAndFormatIssueTypes(res.data.issue_types);
+        setIssueTypes(filtered);
+      })
+      .catch(() => {
+        message.error("Failed to load issue types");
+      })
+      .finally(() => {
+        setIssueTypesLoading(false);
+      });
+  }, [projectKey]);
 
   useEffect(() => {
     setQueryLoading(true);
@@ -67,7 +98,7 @@ const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
           )
           .then((res) => setMatchedIssues(res.data.items || []))
           .catch(() => setMatchedIssues([]))
-          .finally(() => setQueryLoading(false))
+          .finally(() => setQueryLoading(false));
       } else {
         setQueryLoading(false);
         setMatchedIssues([]);
@@ -77,14 +108,40 @@ const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
     return () => clearTimeout(timeout);
   }, [summaryQuery, projectKey]);
 
+  const filterAndFormatIssueTypes = (issueTypes: any[]) => {
+    return issueTypes
+      .filter((it) => ["Story", "Bug"].includes(it.name))
+      .map((it) => ({
+        label: it.name === "Story" ? "Feature Request" : it.name,
+        id: it.id,
+        name: it.name,
+        value: it.id,
+        icon: getIcon(it.name.toLowerCase()),
+      }));
+  };
+
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
       setLoading(true);
+
+      const issueType = issueTypes.find((it) => it.value === values.issue_type);
+
+      const payload = {
+        summary: values.summary,
+        description: values.description,
+        issue_type: {
+          id: issueType?.id, // if `id` is available in issueTypes
+          name: issueType?.label,
+        },
+        backer: [localStorage.getItem("email")]
+      };
+
       await axios.post(
         `${process.env.REACT_APP_JIRA_SERVICE_URL}/api/create-ticket/${projectKey}`,
-        values
+        payload
       );
+
       message.success("Issue created successfully");
       form.resetFields();
       setMatchedIssues([]);
@@ -102,16 +159,21 @@ const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
   };
 
   const handleBack = async (issueKey: string) => {
-    setBackerLoading(true);
-    await axios.post(
-      `${process.env.REACT_APP_JIRA_SERVICE_URL}/api/issue/${issueKey}/add-backers`,
-      {
-        backers: [localStorage.getItem("email")],
-      }
-    );
-    message.success("You've backed the issue");
-    setBackerLoading(false);
-    onClose();
+    setBackerLoading((prev) => ({ ...prev, [issueKey]: true }));
+    try {
+      await axios.post(
+        `${process.env.REACT_APP_JIRA_SERVICE_URL}/api/issue/${issueKey}/add-backers`,
+        {
+          backers: [localStorage.getItem("email")],
+        }
+      );
+      message.success("You've backed the issue");
+      onClose();
+    } catch (err) {
+      message.error("Failed to back issue");
+    } finally {
+      setBackerLoading((prev) => ({ ...prev, [issueKey]: false }));
+    }
   };
 
   const handleViewIssue = (issueKey: string) => {
@@ -144,10 +206,9 @@ const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
         <Form.Item
           name="issue_type"
           label="Type"
-          initialValue="bug"
           rules={[{ required: true, message: "Please select issue type" }]}
         >
-          <Segmented options={issueTypes} />
+          {issueTypesLoading ? <Spin /> : <Segmented options={issueTypes} />}
         </Form.Item>
 
         <Form.Item
@@ -159,11 +220,19 @@ const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
             onChange={(e) => {
               setSummaryQuery(e.target.value);
             }}
-            prefix={queryLoading ? <Spin indicator={<LoadingOutlined size={4}/>}/> : <SearchOutlined />}
+            prefix={
+              queryLoading ? (
+                <Spin indicator={<LoadingOutlined />} size="small" />
+              ) : (
+                <SearchOutlined />
+              )
+            }
           />
         </Form.Item>
 
-        {queryLoading && <Text type={'secondary'}>Searching for matching issues.. </Text>}
+        {queryLoading && (
+          <Text type={"secondary"}>Searching for matching issues.. </Text>
+        )}
 
         {matchedIssues.length > 0 && (
           <Form.Item wrapperCol={{ span: 24 }}>
@@ -176,15 +245,22 @@ const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
                   actions={[
                     <Button
                       size="small"
-                      icon={backerLoading ? <Spin indicator={<LoadingOutlined size={4} />}/> : <LikeOutlined />}
+                      icon={
+                        backerLoading[item.key] ? (
+                          <Spin indicator={<LoadingOutlined size={4} />} />
+                        ) : (
+                          <LikeOutlined />
+                        )
+                      }
                       onClick={() => handleBack(item.key)}
+                      disabled={!!backerLoading[item.key]}
                     >
                       Back
                     </Button>,
                     <Button
                       size="small"
                       icon={<EyeOutlined />}
-                      onClick={() => handleViewIssue}
+                      onClick={() => handleViewIssue(item.key)}
                     >
                       View
                     </Button>,
@@ -194,6 +270,17 @@ const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
                 </List.Item>
               )}
             />
+            <Form.Item wrapperCol={{ span: 24 }}>
+              <Button
+                type="default"
+                block
+                onClick={() => {
+                  setMatchedIssues([]);
+                }}
+              >
+                Proceed Anyway
+              </Button>
+            </Form.Item>
           </Form.Item>
         )}
 
@@ -207,20 +294,6 @@ const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
               <Input.TextArea rows={4} />
             </Form.Item>
 
-            <Form.Item
-              name="priority"
-              label="Priority"
-              initialValue="Medium"
-              rules={[{ required: true, message: "Please select priority" }]}
-            >
-              <Select>
-                {priorities.map((priority) => (
-                  <Option value={priority} key={priority}>
-                    {priority}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
           </>
         )}
       </Form>

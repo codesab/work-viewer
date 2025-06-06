@@ -37,9 +37,8 @@ const Issues: React.FC<IssuesProps> = ({ basePath, history }) => {
   const [issueType, setIssueType] = useState<string>("Story");
   const [page, setPage] = useState<number>(1);
   const [pageSize] = useState(10);
-  const [searchText, setSearchText] = useState("");
 
-  const { view, month } = useParams();
+  const { view, month, issueKey } = useParams();
   const selectedView = view === "calendar" || view === "list" ? view : "list";
   const [viewMode, setViewMode] = useState<"list" | "calendar">(selectedView);
   const [total, setTotal] = useState<number>(0);
@@ -51,9 +50,16 @@ const Issues: React.FC<IssuesProps> = ({ basePath, history }) => {
   );
   const projectKey = "PHNX";
 
+  useEffect(() => {
+    if (issueKey) {
+      fetchIssueDetails(issueKey);
+    }
+  }, [issueKey]);
+
   const fetchIssueDetails = async (issueKey: string) => {
     setPreviewLoading(true);
     try {
+      navigate(`/app/releases/${viewMode}/${currentMonth}/${issueKey}`);
       const response = await fetch(
         `${process.env.REACT_APP_JIRA_SERVICE_URL}/api/issue/${issueKey}`
       );
@@ -106,45 +112,21 @@ const Issues: React.FC<IssuesProps> = ({ basePath, history }) => {
   }, [issueType, page, currentMonth]);
 
   const handleMonthChange = (month: string) => {
-  setPage(1);
-  setLoading(true);
-  setIssues(null); // this works now because state is here
-  setCurrentMonth(month);
-  navigate(`/app/releases/${viewMode}/${month}`);
-};
-
+    setPage(1);
+    setLoading(true);
+    setIssues(null); // this works now because state is here
+    setCurrentMonth(month);
+    navigate(`/app/releases/${viewMode}/${month}`);
+  };
 
   return (
-    <div style={{padding: 24}} className="app-releases">
+    <div style={{ padding: 24 }} className="app-releases">
       <IssuesHeader
         selectedView={selectedView}
-        onViewChange={(val) => navigate(`/app/releases/${val}`)} 
-        setSelectedIssue={(issueKey: string) => fetchIssueDetails(issueKey)}      
-        />
+        onViewChange={(val) => navigate(`/app/releases/${val}`)}
+        setSelectedIssue={(issueKey: string) => fetchIssueDetails(issueKey)}
+      />
       <Row gutter={24}>
-        {/* <Space
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          marginTop: 16,
-        }}
-      >
-        <Search
-          placeholder="Search by key or summary"
-          allowClear
-          onChange={(e) => setSearchText(e.target.value)}
-          style={{ width: 300 }}
-        />
-
-        <MonthPicker
-          value={dayjs(currentMonth)}
-          onChange={(value) => {
-            if (value) setCurrentMonth(value.format("YYYY-MM"));
-          }}
-          placeholder="Select month"
-        />
-      </Space> */}
-
         <Col span={18}>
           {error && (
             <Alert type="error" message={error} style={{ marginTop: 16 }} />
