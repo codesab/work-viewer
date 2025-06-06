@@ -11,7 +11,9 @@ import {
   Space,
   List,
   Spin,
+  Upload,
 } from "antd";
+import type { UploadFile, UploadProps } from "antd";
 import axios from "axios";
 import { getIcon } from "../utils";
 import {
@@ -19,6 +21,8 @@ import {
   EyeOutlined,
   LikeOutlined,
   LoadingOutlined,
+  UploadOutlined,
+  InboxOutlined,
 } from "@ant-design/icons";
 
 const { Option } = Select;
@@ -59,6 +63,7 @@ const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
   const [summaryQuery, setSummaryQuery] = useState("");
   const [issueTypes, setIssueTypes] = useState<IssueType[]>([]);
   const [issueTypesLoading, setIssueTypesLoading] = useState(true);
+  const [fileList, setFileList] = useState<UploadFile[]>([]);
 
   useEffect(() => {
     if (!projectKey) return;
@@ -130,24 +135,36 @@ const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
 
       const issueType = issueTypes.find((it) => it.value === values.issue_type);
 
-      const payload = {
-        summary: values.summary,
-        description: values.description,
-        issue_type: {
-          id: issueType?.id, // if `id` is available in issueTypes
-          name: issueType?.label,
-        },
-        backer: [localStorage.getItem("email")],
-      };
+      const formData = new FormData();
+      formData.append('summary', values.summary);
+      formData.append('description', values.description);
+      formData.append('issue_type', JSON.stringify({
+        id: issueType?.id,
+        name: issueType?.label,
+      }));
+      formData.append('backer', JSON.stringify([localStorage.getItem("email")]));
+
+      // Add files to form data
+      fileList.forEach((file) => {
+        if (file.originFileObj) {
+          formData.append('attachments', file.originFileObj);
+        }
+      });
 
       const res = await axios.post(
         `${process.env.REACT_APP_JIRA_SERVICE_URL}/api/create-ticket/${projectKey}`,
-        payload
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
       );
 
       message.success(`Issue ${res.data.issue_key} created successfully`);
       form.resetFields();
       setMatchedIssues([]);
+      setFileList([]);
       setLoading(false);
       onClose();
       if (onSuccess) onSuccess();
@@ -184,6 +201,48 @@ const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
     onClose(); // Close the modal
   };
 
+  const uploadProps: UploadProps = {
+    fileList,
+    beforeUpload: (file) => {
+      const isLt5M = file.size / 1024 / 1024 < 5;
+      if (!isLt5M) {
+        message.error('File must be smaller than 5MB!');
+        return false;
+      }
+      return false; // Prevent auto upload
+    },
+    onChange: ({ fileList: newFileList }) => {
+      if (newFileList.length > 3) {
+        message.error('You can only upload up to 3 files!');
+        return;
+      }
+      setFileList(newFileList);
+    },
+    onPreview: async (file: UploadFile) => {
+      let src = file.url;
+      if (!src) {
+        src = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file.originFileObj as File);
+          reader.onload = () => resolve(reader.result as string);
+        });
+      }
+      const image = new Image();
+      image.src = src as string;
+      const imgWindow = window.open(src);
+      imgWindow?.document.write(image.outerHTML);
+    },
+    onRemove: (file) => {
+      const index = fileList.indexOf(file);
+      const newFileList = fileList.slice();
+      newFileList.splice(index, 1);
+      setFileList(newFileList);
+    },
+    listType: "picture-card",
+    multiple: true,
+    accept: "image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt",
+  };
+
   return (
     <Modal
       title="Create Issue"
@@ -191,6 +250,7 @@ const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
       onCancel={() => {
         form.resetFields(); // Reset form fields
         setMatchedIssues([]); // Clear matched issues
+        setFileList([]); // Clear file list
         onClose(); // Call the original onClose handler
       }}
       onOk={handleOk}
@@ -295,6 +355,23 @@ const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
               rules={[{ required: true, message: "Please enter description" }]}
             >
               <Input.TextArea rows={4} />
+            </Form.Item>
+
+            <Form.Item
+              label="Attachments"
+              help="Upload up to 3 files (max 5MB each)"
+            >
+              <Upload.Dragger {...uploadProps}>
+                <p className="ant-upload-drag-icon">
+                  <InboxOutlined />
+                </p>
+                <p className="ant-upload-text">
+                  Click or drag files to this area to upload
+                </p>
+                <p className="ant-upload-hint">
+                  Support for images, PDFs, documents. Maximum 3 files, 5MB each.
+                </p>
+              </Upload.Dragger>
             </Form.Item>
           </>
         )}
