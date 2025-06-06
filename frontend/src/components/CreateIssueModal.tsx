@@ -70,6 +70,9 @@ const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
       .then((res) => {
         const filtered = filterAndFormatIssueTypes(res.data.issue_types);
         setIssueTypes(filtered);
+        if (filtered.length > 0) {
+          form.setFieldsValue({ issue_type: filtered[0].value });
+        }
       })
       .catch(() => {
         message.error("Failed to load issue types");
@@ -134,15 +137,15 @@ const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
           id: issueType?.id, // if `id` is available in issueTypes
           name: issueType?.label,
         },
-        backer: [localStorage.getItem("email")]
+        backer: [localStorage.getItem("email")],
       };
 
-      await axios.post(
+      const res = await axios.post(
         `${process.env.REACT_APP_JIRA_SERVICE_URL}/api/create-ticket/${projectKey}`,
         payload
       );
 
-      message.success("Issue created successfully");
+      message.success(`Issue ${res.data.issue_key} created successfully`);
       form.resetFields();
       setMatchedIssues([]);
       setLoading(false);
@@ -293,7 +296,6 @@ const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
             >
               <Input.TextArea rows={4} />
             </Form.Item>
-
           </>
         )}
       </Form>
