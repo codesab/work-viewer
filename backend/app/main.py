@@ -302,6 +302,18 @@ async def get_issue_details(issue_key: str):
                             detail=f"Error fetching issue details: {str(e)}")
 
 
+@app.get("/api/project/{project_key}/issue-types")
+async def get_project_issue_types(project_key: str):
+    jira = get_jira_client()
+    try:
+        project = jira.project(project_key, expand="issueTypes")
+        issue_types = [{"id": it.id, "name": it.name, "description": getattr(it, 'description', '')} 
+                      for it in project.issueTypes]
+        return {"issue_types": issue_types}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching issue types: {str(e)}")
+
+
 @app.post("/api/create-ticket/{project_key}")
 async def create_ticket(project_key: str, request: dict):
     jira = get_jira_client()
@@ -317,6 +329,25 @@ async def create_ticket(project_key: str, request: dict):
         issue_type = request.get('issue_type', 'Bug')
         if issue_type.lower() == 'feature':
             issue_type = 'Story'
+
+        # Validate that required fields are present
+        if not request.get('summary'):
+            raise HTTPException(status_code=400, detail="Summary is required")
+
+        # Validate that the issue type exists in the project
+        try:
+            project = jira.project(project_key, expand="issueTypes")
+            available_types = [it.name for it in project.issueTypes]
+            if issue_type not in available_types:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Issue type '{issue_type}' not available in project {project_key}. Available types: {available_types}"
+                )
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error validating issue type: {str(e)}")
+            # Continue anyway - let JIRA handle the validation
 
         issue_dict = {
             'project': {
@@ -362,6 +393,9 @@ async def create_ticket(project_key: str, request: dict):
         if request.get('labels'):
             issue_dict['labels'] = request.get('labels')
 
+        # Log the issue creation request for debugging
+        logger.info(f"Creating issue with payload: {issue_dict}")
+        
         new_issue = jira.create_issue(fields=issue_dict)
 
         return {
@@ -372,6 +406,8 @@ async def create_ticket(project_key: str, request: dict):
         }
 
     except Exception as e:
+        logger.error(f"Error creating JIRA issue: {str(e)}")
+        logger.error(f"Issue dict used: {issue_dict}")
         raise HTTPException(status_code=500,
                             detail=f"Error creating ticket: {str(e)}")
 
