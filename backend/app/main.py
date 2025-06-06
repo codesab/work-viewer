@@ -307,11 +307,15 @@ async def get_project_issue_types(project_key: str):
     jira = get_jira_client()
     try:
         project = jira.project(project_key, expand="issueTypes")
-        issue_types = [{"id": it.id, "name": it.name, "description": getattr(it, 'description', '')} 
-                      for it in project.issueTypes]
+        issue_types = [{
+            "id": it.id,
+            "name": it.name,
+            "description": getattr(it, 'description', '')
+        } for it in project.issueTypes]
         return {"issue_types": issue_types}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching issue types: {str(e)}")
+        raise HTTPException(status_code=500,
+                            detail=f"Error fetching issue types: {str(e)}")
 
 
 @app.post("/api/create-ticket/{project_key}")
@@ -332,7 +336,8 @@ async def create_ticket(project_key: str, request: dict):
         # Get issue type from request - can be either a string (legacy) or an object with id/name
         issue_type_input = request.get('issue_type')
         if not issue_type_input:
-            raise HTTPException(status_code=400, detail="Issue type is required")
+            raise HTTPException(status_code=400,
+                                detail="Issue type is required")
 
         # Handle both string and object formats for issue type
         if isinstance(issue_type_input, dict):
@@ -342,7 +347,9 @@ async def create_ticket(project_key: str, request: dict):
             elif 'name' in issue_type_input:
                 issue_type_dict = {'name': issue_type_input['name']}
             else:
-                raise HTTPException(status_code=400, detail="Issue type object must have either 'id' or 'name'")
+                raise HTTPException(
+                    status_code=400,
+                    detail="Issue type object must have either 'id' or 'name'")
         else:
             # Legacy string format - use as name
             issue_type_dict = {'name': str(issue_type_input)}
@@ -351,16 +358,25 @@ async def create_ticket(project_key: str, request: dict):
         visibility_value = None
         try:
             field_config = jira._get_json("field/customfield_11357/option")
-            active_values = [v for v in field_config.get('values', []) if not v.get('disabled', False)]
+            active_values = [
+                v for v in field_config.get('values', [])
+                if not v.get('disabled', False)
+            ]
             if active_values:
                 visibility_value = {'value': active_values[0]['value']}
-                logger.info(f"Using first available visibility value: {active_values[0]['value']}")
+                logger.info(
+                    f"Using first available visibility value: {active_values[0]['value']}"
+                )
             else:
                 # Fallback to hardcoded value if no options found
                 visibility_value = {'value': "Organisation"}
-                logger.warning("No active visibility options found, using fallback 'Organisation'")
+                logger.warning(
+                    "No active visibility options found, using fallback 'Organisation'"
+                )
         except Exception as visibility_error:
-            logger.warning(f"Could not fetch visibility field options: {visibility_error}")
+            logger.warning(
+                f"Could not fetch visibility field options: {visibility_error}"
+            )
             # Fallback to hardcoded value
             visibility_value = {'value': "Organisation"}
 
@@ -371,11 +387,14 @@ async def create_ticket(project_key: str, request: dict):
             'summary': request.get('summary'),
             'description': request.get('description', ''),
             'issuetype': issue_type_dict,
-            # 'priority': {'name': request.get('priority', 'Medium')},
-            # 'reporter': {'name': DEFAULT_REPORTER_EMAIL},
-            'customfield_11357': visibility_value,  # Visibility custom field with first available value
-            'customfield_11421':
-            [first_backer]  # Backers field with creator as first backer
+            'priority': {
+                'name': request.get('priority', 'Medium')
+            },
+            'reporter': {
+                'name': DEFAULT_REPORTER_EMAIL
+            },
+            'customfield_11357':
+            visibility_value,  # Visibility custom field with first available value
         }
 
         # Add assignee if provided
@@ -412,7 +431,8 @@ async def create_ticket(project_key: str, request: dict):
         return {
             "success": True,
             "issue_key": new_issue.key,
-            "message": f"{issue_type_dict.get('name', 'Issue')} {new_issue.key} created successfully",
+            "message":
+            f"{issue_type_dict.get('name', 'Issue')} {new_issue.key} created successfully",
             "issue_url": f"{settings.JIRA_SERVER}/browse/{new_issue.key}"
         }
 
@@ -426,26 +446,27 @@ async def create_ticket(project_key: str, request: dict):
 @app.get("/api/custom-field/{field_id}/values")
 async def get_custom_field_values(field_id: str):
     jira = get_jira_client()
-    
+
     try:
         # Get field information including possible values
         field_info = jira.fields()
         target_field = None
-        
+
         # Find the specific field by ID
         for field in field_info:
             if field['id'] == field_id:
                 target_field = field
                 break
-        
+
         if not target_field:
-            raise HTTPException(status_code=404, detail=f"Custom field {field_id} not found")
-        
+            raise HTTPException(status_code=404,
+                                detail=f"Custom field {field_id} not found")
+
         # Get field configuration and possible values
         try:
             # For select/radio/checkbox fields, get the options
             field_config = jira._get_json(f"field/{field_id}/option")
-            
+
             values = []
             for option in field_config.get('values', []):
                 values.append({
@@ -453,10 +474,10 @@ async def get_custom_field_values(field_id: str):
                     "value": option.get('value'),
                     "disabled": option.get('disabled', False)
                 })
-            
+
             # Filter out disabled options
             active_values = [v for v in values if not v['disabled']]
-            
+
             return {
                 "field_id": field_id,
                 "field_name": target_field.get('name'),
@@ -465,11 +486,13 @@ async def get_custom_field_values(field_id: str):
                 "default_value": active_values[0] if active_values else None,
                 "total_count": len(active_values)
             }
-            
+
         except Exception as option_error:
             # If field doesn't have predefined options, return field info only
-            logger.info(f"Field {field_id} doesn't have predefined options: {option_error}")
-            
+            logger.info(
+                f"Field {field_id} doesn't have predefined options: {option_error}"
+            )
+
             return {
                 "field_id": field_id,
                 "field_name": target_field.get('name'),
@@ -479,10 +502,11 @@ async def get_custom_field_values(field_id: str):
                 "total_count": 0,
                 "message": "This field doesn't have predefined options"
             }
-            
+
     except Exception as e:
         logger.error(f"Error fetching custom field values: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error fetching field values: {str(e)}")
+        raise HTTPException(status_code=500,
+                            detail=f"Error fetching field values: {str(e)}")
 
 
 @app.post("/api/issue/{issue_key}/add-backers")
