@@ -386,13 +386,18 @@ async def create_ticket(project_key: str, request: dict):
             priorities = jira.priorities()
             if priorities:
                 # Try to find Medium priority first, otherwise use the first available
-                medium_priority = next((p for p in priorities if p.name.lower() == 'medium'), None)
+                medium_priority = next(
+                    (p for p in priorities if p.name.lower() == 'medium'),
+                    None)
                 if medium_priority:
                     priority_value = {'name': medium_priority.name}
-                    logger.info(f"Using Medium priority: {medium_priority.name}")
+                    logger.info(
+                        f"Using Medium priority: {medium_priority.name}")
                 else:
                     priority_value = {'name': priorities[0].name}
-                    logger.info(f"Medium priority not found, using first available: {priorities[0].name}")
+                    logger.info(
+                        f"Medium priority not found, using first available: {priorities[0].name}"
+                    )
             else:
                 logger.warning("No priorities found, skipping priority field")
         except Exception as priority_error:
@@ -411,8 +416,8 @@ async def create_ticket(project_key: str, request: dict):
         }
 
         # Add priority only if we successfully fetched it
-        if priority_value:
-            issue_dict['priority'] = priority_value
+        # if priority_value:
+        #     issue_dict['priority'] = priority_value
 
         # Add assignee if provided
         # if request.get('assignee'):
