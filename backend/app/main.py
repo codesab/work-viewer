@@ -347,6 +347,23 @@ async def create_ticket(project_key: str, request: dict):
             # Legacy string format - use as name
             issue_type_dict = {'name': str(issue_type_input)}
 
+        # Get the first available value for customfield_11357 (Visibility field)
+        visibility_value = None
+        try:
+            field_config = jira._get_json("field/customfield_11357/option")
+            active_values = [v for v in field_config.get('values', []) if not v.get('disabled', False)]
+            if active_values:
+                visibility_value = {'value': active_values[0]['value']}
+                logger.info(f"Using first available visibility value: {active_values[0]['value']}")
+            else:
+                # Fallback to hardcoded value if no options found
+                visibility_value = {'value': "Organisation"}
+                logger.warning("No active visibility options found, using fallback 'Organisation'")
+        except Exception as visibility_error:
+            logger.warning(f"Could not fetch visibility field options: {visibility_error}")
+            # Fallback to hardcoded value
+            visibility_value = {'value': "Organisation"}
+
         issue_dict = {
             'project': {
                 'key': project_key
@@ -356,9 +373,7 @@ async def create_ticket(project_key: str, request: dict):
             'issuetype': issue_type_dict,
             # 'priority': {'name': request.get('priority', 'Medium')},
             # 'reporter': {'name': DEFAULT_REPORTER_EMAIL},
-            'customfield_11357': {
-                'value': "Organisation"
-            },  # Visibility custom field
+            'customfield_11357': visibility_value,  # Visibility custom field with first available value
             'customfield_11421':
             [first_backer]  # Backers field with creator as first backer
         }
@@ -406,6 +421,68 @@ async def create_ticket(project_key: str, request: dict):
         logger.error(f"Issue dict used: {issue_dict}")
         raise HTTPException(status_code=500,
                             detail=f"Error creating ticket: {str(e)}")
+
+
+@app.get("/api/custom-field/{field_id}/values")
+async def get_custom_field_values(field_id: str):
+    jira = get_jira_client()
+    
+    try:
+        # Get field information including possible values
+        field_info = jira.fields()
+        target_field = None
+        
+        # Find the specific field by ID
+        for field in field_info:
+            if field['id'] == field_id:
+                target_field = field
+                break
+        
+        if not target_field:
+            raise HTTPException(status_code=404, detail=f"Custom field {field_id} not found")
+        
+        # Get field configuration and possible values
+        try:
+            # For select/radio/checkbox fields, get the options
+            field_config = jira._get_json(f"field/{field_id}/option")
+            
+            values = []
+            for option in field_config.get('values', []):
+                values.append({
+                    "id": option.get('id'),
+                    "value": option.get('value'),
+                    "disabled": option.get('disabled', False)
+                })
+            
+            # Filter out disabled options
+            active_values = [v for v in values if not v['disabled']]
+            
+            return {
+                "field_id": field_id,
+                "field_name": target_field.get('name'),
+                "field_type": target_field.get('schema', {}).get('type'),
+                "values": active_values,
+                "default_value": active_values[0] if active_values else None,
+                "total_count": len(active_values)
+            }
+            
+        except Exception as option_error:
+            # If field doesn't have predefined options, return field info only
+            logger.info(f"Field {field_id} doesn't have predefined options: {option_error}")
+            
+            return {
+                "field_id": field_id,
+                "field_name": target_field.get('name'),
+                "field_type": target_field.get('schema', {}).get('type'),
+                "values": [],
+                "default_value": None,
+                "total_count": 0,
+                "message": "This field doesn't have predefined options"
+            }
+            
+    except Exception as e:
+        logger.error(f"Error fetching custom field values: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fetching field values: {str(e)}")
 
 
 @app.post("/api/issue/{issue_key}/add-backers")

@@ -99,3 +99,17 @@ class AddBackersResponse(BaseModel):
     total_backers: int
     new_backers_added: int
     all_backers: List[str]
+
+class CustomFieldValue(BaseModel):
+    id: str
+    value: str
+    disabled: bool
+
+class CustomFieldValuesResponse(BaseModel):
+    field_id: str
+    field_name: str
+    field_type: Optional[str] = None
+    values: List[CustomFieldValue]
+    default_value: Optional[CustomFieldValue] = None
+    total_count: int
+    message: Optional[str] = None
