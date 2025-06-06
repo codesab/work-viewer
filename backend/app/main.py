@@ -380,6 +380,25 @@ async def create_ticket(project_key: str, request: dict):
             # Fallback to hardcoded value
             visibility_value = {'value': "Organisation"}
 
+        # Get the first available priority
+        priority_value = None
+        try:
+            priorities = jira.priorities()
+            if priorities:
+                # Try to find Medium priority first, otherwise use the first available
+                medium_priority = next((p for p in priorities if p.name.lower() == 'medium'), None)
+                if medium_priority:
+                    priority_value = {'name': medium_priority.name}
+                    logger.info(f"Using Medium priority: {medium_priority.name}")
+                else:
+                    priority_value = {'name': priorities[0].name}
+                    logger.info(f"Medium priority not found, using first available: {priorities[0].name}")
+            else:
+                logger.warning("No priorities found, skipping priority field")
+        except Exception as priority_error:
+            logger.warning(f"Could not fetch priorities: {priority_error}")
+            # Don't set priority if we can't fetch it
+
         issue_dict = {
             'project': {
                 'key': project_key
@@ -387,15 +406,13 @@ async def create_ticket(project_key: str, request: dict):
             'summary': request.get('summary'),
             'description': request.get('description', ''),
             'issuetype': issue_type_dict,
-            'priority': {
-                'name': request.get('priority', 'Medium')
-            },
-            'reporter': {
-                'name': DEFAULT_REPORTER_EMAIL
-            },
             'customfield_11357':
             visibility_value,  # Visibility custom field with first available value
         }
+
+        # Add priority only if we successfully fetched it
+        if priority_value:
+            issue_dict['priority'] = priority_value
 
         # Add assignee if provided
         # if request.get('assignee'):
