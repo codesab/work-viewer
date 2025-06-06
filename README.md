@@ -243,10 +243,26 @@ cd backend && uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
 
 ### Ticket Creation
 
-#### 9. Create Ticket (Bug or Feature/Story)
+#### 9. Create Ticket (Bug or Feature/Story) with Optional File Attachments
 **POST** `/api/create-ticket/{project_key}`
 
-**Request Body (using issue type object - recommended):**
+This endpoint supports both JSON data and file uploads. When including attachments, use `multipart/form-data` format.
+
+**Request (with attachments - multipart/form-data):**
+
+Form Fields:
+- `ticket_data` (required): JSON string containing ticket information
+- `attachments` (optional): One or more files to attach
+
+**Example using curl:**
+```bash
+curl -X POST "http://localhost:5000/api/create-ticket/PROJ" \
+  -F "ticket_data={\"summary\":\"Fix login button not working on mobile\",\"description\":\"The login button is not responsive on mobile devices. Users cannot tap it to log in.\",\"issue_type\":{\"id\":\"10001\",\"name\":\"Bug\"},\"assignee\":\"john.doe@company.com\",\"due_date\":\"2024-02-15\",\"story_points\":5,\"epic_link\":\"PROJ-100\",\"components\":[\"Frontend\",\"Mobile\"],\"labels\":[\"mobile\",\"urgent\"],\"backer\":\"creator@company.com\"}" \
+  -F "attachments=@screenshot.png" \
+  -F "attachments=@error_log.txt"
+```
+
+**Request Body (JSON format - for requests without attachments):**
 ```json
 {
   "summary": "Fix login button not working on mobile",
@@ -265,7 +281,7 @@ cd backend && uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
 }
 ```
 
-**Request Body (using issue type string - legacy):**
+**Legacy Request Body (using issue type string):**
 ```json
 {
   "summary": "Add dark mode support",
@@ -286,10 +302,22 @@ cd backend && uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
 {
   "success": true,
   "issue_key": "PROJ-130",
-  "message": "Bug PROJ-130 created successfully",
-  "issue_url": "https://your-jira-instance.atlassian.net/browse/PROJ-130"
+  "message": "Bug PROJ-130 created successfully with 2 attachment(s)",
+  "issue_url": "https://your-jira-instance.atlassian.net/browse/PROJ-130",
+  "attached_files": ["screenshot.png", "error_log.txt"]
 }
 ```
+
+**Supported File Types:**
+- Images: PNG, JPG, JPEG, GIF, BMP
+- Documents: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX
+- Text files: TXT, CSV, LOG
+- Archive files: ZIP, RAR, 7Z
+- Code files: Various programming language extensions
+
+**File Size Limits:**
+- Maximum file size: 10MB per file (configurable in JIRA)
+- Maximum total attachments per issue: Based on JIRA configuration
 
 ### Backers Management
 
@@ -335,6 +363,7 @@ cd backend && uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
 - **Issue Retrieval**: Paginated issue listing with filtering by month and search
 - **Detailed Issue View**: Complete issue details with subtasks and progress tracking
 - **Ticket Creation**: Create bugs and feature requests with automatic field handling
+- **File Attachments**: Upload and attach files to issues during creation
 - **Backer Management**: Add multiple backers to existing issues
 - **Progress Tracking**: Automatic calculation of completion percentages for stories with subtasks
 - **CORS Support**: Configured for multiple frontend domains

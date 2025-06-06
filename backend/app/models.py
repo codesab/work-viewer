@@ -88,6 +88,7 @@ class CreateTicketResponse(BaseModel):
     issue_key: str
     message: str
     issue_url: str
+    attached_files: Optional[List[str]] = []
 
 class AddBackersRequest(BaseModel):
     backers: Union[str, List[str]]  # Single email, comma-separated emails, or list of emails

@@ -1,10 +1,13 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from jira import JIRA
 from .config import settings
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 import datetime
 import logging
+import json
+import tempfile
+import os
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -319,13 +322,23 @@ async def get_project_issue_types(project_key: str):
 
 
 @app.post("/api/create-ticket/{project_key}")
-async def create_ticket(project_key: str, request: dict):
+async def create_ticket(
+    project_key: str,
+    ticket_data: str = Form(...),
+    attachments: List[UploadFile] = File(default=[])
+):
     jira = get_jira_client()
 
     # Default reporter email - you can change this constant
     DEFAULT_REPORTER_EMAIL = "jira.automation@bizongo.com"
 
     try:
+        # Parse the JSON ticket data from form
+        try:
+            request = json.loads(ticket_data)
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=400, detail="Invalid JSON in ticket_data")
+
         # Get current user to set as first backer
         first_backer = request.get('backer')
 
@@ -450,12 +463,46 @@ async def create_ticket(project_key: str, request: dict):
 
         new_issue = jira.create_issue(fields=issue_dict)
 
+        # Handle file attachments if any
+        attached_files = []
+        if attachments:
+            for attachment in attachments:
+                if attachment.filename:
+                    try:
+                        # Create a temporary file to store the upload
+                        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                            content = await attachment.read()
+                            temp_file.write(content)
+                            temp_file_path = temp_file.name
+
+                        # Attach the file to the JIRA issue
+                        with open(temp_file_path, 'rb') as file:
+                            jira.add_attachment(
+                                issue=new_issue.key,
+                                attachment=file,
+                                filename=attachment.filename
+                            )
+                        
+                        attached_files.append(attachment.filename)
+                        logger.info(f"Attached file {attachment.filename} to issue {new_issue.key}")
+
+                        # Clean up the temporary file
+                        os.unlink(temp_file_path)
+
+                    except Exception as attachment_error:
+                        logger.error(f"Error attaching file {attachment.filename}: {attachment_error}")
+                        # Continue with other attachments even if one fails
+
+        response_message = f"{issue_type_dict.get('name', 'Issue')} {new_issue.key} created successfully"
+        if attached_files:
+            response_message += f" with {len(attached_files)} attachment(s)"
+
         return {
             "success": True,
             "issue_key": new_issue.key,
-            "message":
-            f"{issue_type_dict.get('name', 'Issue')} {new_issue.key} created successfully",
-            "issue_url": f"{settings.JIRA_SERVER}/browse/{new_issue.key}"
+            "message": response_message,
+            "issue_url": f"{settings.JIRA_SERVER}/browse/{new_issue.key}",
+            "attached_files": attached_files
         }
 
     except Exception as e:
