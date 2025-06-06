@@ -325,29 +325,27 @@ async def create_ticket(project_key: str, request: dict):
         # Get current user to set as first backer
         first_backer = request.get('backer')
 
-        # Determine issue type (default to Bug if not specified)
-        issue_type = request.get('issue_type', 'Bug')
-        if issue_type.lower() == 'feature':
-            issue_type = 'Story'
-
         # Validate that required fields are present
         if not request.get('summary'):
             raise HTTPException(status_code=400, detail="Summary is required")
 
-        # Validate that the issue type exists in the project
-        try:
-            project = jira.project(project_key, expand="issueTypes")
-            available_types = [it.name for it in project.issueTypes]
-            if issue_type not in available_types:
-                raise HTTPException(
-                    status_code=400, 
-                    detail=f"Issue type '{issue_type}' not available in project {project_key}. Available types: {available_types}"
-                )
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.error(f"Error validating issue type: {str(e)}")
-            # Continue anyway - let JIRA handle the validation
+        # Get issue type from request - can be either a string (legacy) or an object with id/name
+        issue_type_input = request.get('issue_type')
+        if not issue_type_input:
+            raise HTTPException(status_code=400, detail="Issue type is required")
+
+        # Handle both string and object formats for issue type
+        if isinstance(issue_type_input, dict):
+            # Frontend sends issue type object with id and name
+            if 'id' in issue_type_input:
+                issue_type_dict = {'id': issue_type_input['id']}
+            elif 'name' in issue_type_input:
+                issue_type_dict = {'name': issue_type_input['name']}
+            else:
+                raise HTTPException(status_code=400, detail="Issue type object must have either 'id' or 'name'")
+        else:
+            # Legacy string format - use as name
+            issue_type_dict = {'name': str(issue_type_input)}
 
         issue_dict = {
             'project': {
@@ -355,9 +353,7 @@ async def create_ticket(project_key: str, request: dict):
             },
             'summary': request.get('summary'),
             'description': request.get('description', ''),
-            'issuetype': {
-                'name': issue_type
-            },
+            'issuetype': issue_type_dict,
             # 'priority': {'name': request.get('priority', 'Medium')},
             # 'reporter': {'name': DEFAULT_REPORTER_EMAIL},
             'customfield_11357': {
@@ -395,13 +391,13 @@ async def create_ticket(project_key: str, request: dict):
 
         # Log the issue creation request for debugging
         logger.info(f"Creating issue with payload: {issue_dict}")
-        
+
         new_issue = jira.create_issue(fields=issue_dict)
 
         return {
             "success": True,
             "issue_key": new_issue.key,
-            "message": f"{issue_type} {new_issue.key} created successfully",
+            "message": f"{issue_type_dict.get('name', 'Issue')} {new_issue.key} created successfully",
             "issue_url": f"{settings.JIRA_SERVER}/browse/{new_issue.key}"
         }
 
