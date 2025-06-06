@@ -1,3 +1,4 @@
+
 # JIRA Dashboard API
 
 A FastAPI-based backend service for managing JIRA issues with a comprehensive set of APIs for creating, retrieving, and managing tickets.
@@ -112,9 +113,43 @@ cd backend && uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
 }
 ```
 
+### Custom Field Management
+
+#### 6. Get Custom Field Values
+**GET** `/api/custom-field/{field_id}/values`
+
+**Example:** `GET /api/custom-field/customfield_11357/values`
+
+**Response:**
+```json
+{
+  "field_id": "customfield_11357",
+  "field_name": "Visibility",
+  "field_type": "option",
+  "values": [
+    {
+      "id": "10001",
+      "value": "Organisation",
+      "disabled": false
+    },
+    {
+      "id": "10002",
+      "value": "Public",
+      "disabled": false
+    }
+  ],
+  "default_value": {
+    "id": "10001",
+    "value": "Organisation",
+    "disabled": false
+  },
+  "total_count": 2
+}
+```
+
 ### Issue Management
 
-#### 6. Get Issues (with Pagination and Filtering)
+#### 7. Get Issues (with Pagination and Filtering)
 **GET** `/api/issues/{project_key}`
 
 **Query Parameters:**
@@ -149,7 +184,7 @@ cd backend && uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
 }
 ```
 
-#### 7. Get Issue Details with Subtasks and Progress
+#### 8. Get Issue Details with Subtasks and Progress
 **GET** `/api/issue/{issue_key}`
 
 **Example:** `GET /api/issue/PROJ-123`
@@ -208,7 +243,7 @@ cd backend && uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
 
 ### Ticket Creation
 
-#### 8. Create Ticket (Bug or Feature/Story)
+#### 9. Create Ticket (Bug or Feature/Story)
 **POST** `/api/create-ticket/{project_key}`
 
 **Request Body (using issue type object - recommended):**
@@ -220,7 +255,6 @@ cd backend && uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
     "id": "10001",
     "name": "Bug"
   },
-  "priority": "High",
   "assignee": "john.doe@company.com",
   "due_date": "2024-02-15",
   "story_points": 5,
@@ -237,7 +271,6 @@ cd backend && uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
   "summary": "Add dark mode support",
   "description": "Implement dark mode theme for better user experience",
   "issue_type": "Story",
-  "priority": "Medium",
   "assignee": "jane.smith@company.com",
   "due_date": "2024-03-01",
   "story_points": 8,
@@ -260,7 +293,7 @@ cd backend && uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
 
 ### Backers Management
 
-#### 9. Add Backers to Issue
+#### 10. Add Backers to Issue
 **POST** `/api/issue/{issue_key}/add-backers`
 
 **Request Body (single email):**
@@ -290,15 +323,8 @@ cd backend && uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
   "success": true,
   "message": "Backers added to PROJ-130",
   "issue_key": "PROJ-130",
-  "total_backers": 5,
-  "new_backers_added": 3,
-  "all_backers": [
-    "creator@company.com",
-    "existing.backer@company.com",
-    "user1@company.com",
-    "user2@company.com",
-    "user3@company.com"
-  ]
+  "new_backers_added": "user1@company.com\nuser2@company.com\nuser3@company.com",
+  "final_backers": "existing.backer@company.com\nuser1@company.com\nuser2@company.com\nuser3@company.com"
 }
 ```
 
@@ -306,20 +332,33 @@ cd backend && uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
 
 - **Authentication**: JIRA API token-based authentication
 - **Project Management**: Validate projects and get available statuses
-- **Issue Retrieval**: Paginated issue listing with filtering by month
+- **Issue Retrieval**: Paginated issue listing with filtering by month and search
 - **Detailed Issue View**: Complete issue details with subtasks and progress tracking
-- **Ticket Creation**: Create bugs and feature requests with automatic backer assignment
+- **Ticket Creation**: Create bugs and feature requests with automatic field handling
 - **Backer Management**: Add multiple backers to existing issues
 - **Progress Tracking**: Automatic calculation of completion percentages for stories with subtasks
 - **CORS Support**: Configured for multiple frontend domains
+- **Dynamic Field Handling**: Automatically fetches and uses available field values
+- **Fallback Values**: Uses sensible defaults when fields are unavailable
 
 ## Custom Fields
 
-- **Visibility**: `customfield_11357` - Set to "Organisation" for all created tickets
-- **Backers**: `customfield_11421` - Comma-separated list of email addresses
+- **Visibility**: `customfield_11357` - Dynamically fetches first available option (fallback: "Organisation")
+- **Backers**: `customfield_11421` - Text field for storing backer email addresses
 - **Story Points**: `customfield_10004` - Used for story estimation
 - **Epic Link**: `customfield_10008` - Links stories to epics
 - **Start Date**: `customfield_10015` - Issue start date
+
+## Smart Field Management
+
+The API automatically handles field availability issues by:
+
+1. **Dynamic Visibility Field**: Fetches available options from `customfield_11357` and uses the first available value
+2. **Dynamic Priority**: Attempts to use "Medium" priority, falls back to the first available priority if Medium is unavailable
+3. **Field Validation**: Skips fields that are not available on the current issue type screen
+4. **Graceful Degradation**: Continues ticket creation even if some optional fields fail
+
+This ensures robust ticket creation across different JIRA configurations and project setups.
 
 ## Error Handling
 
@@ -335,3 +374,4 @@ All endpoints return appropriate HTTP status codes and error messages:
 {
   "detail": "Error message describing what went wrong"
 }
+```
