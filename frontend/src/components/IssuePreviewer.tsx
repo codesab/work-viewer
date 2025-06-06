@@ -214,7 +214,7 @@ const IssuePreviewer: React.FC<Props> = (props: Props) => {
             </Text>
           </div>
 
-          <Progress percent={progress.completed_percentage} status="active" />
+          <Progress percent={Math.ceil(progress.completed_percentage)} status="active" />
 
           <List
             header={<Text strong>Subtasks</Text>}
