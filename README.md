@@ -67,7 +67,35 @@ cd backend && uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
 }
 ```
 
-#### 4. Get Project Statuses
+#### 4. Get Project Issue Types
+**GET** `/api/project/{project_key}/issue-types`
+
+**Example:** `GET /api/project/PROJ/issue-types`
+
+**Response:**
+```json
+{
+  "issue_types": [
+    {
+      "id": "10001",
+      "name": "Bug",
+      "description": "A problem which impairs or prevents the functions of the product."
+    },
+    {
+      "id": "10002",
+      "name": "Story",
+      "description": "A user story. Created by JIRA Software - do not edit or delete."
+    },
+    {
+      "id": "10003",
+      "name": "Task",
+      "description": "A task that needs to be done."
+    }
+  ]
+}
+```
+
+#### 5. Get Project Statuses
 **GET** `/api/statuses/{project_key}`
 
 **Example:** `GET /api/statuses/PROJ`
@@ -86,7 +114,7 @@ cd backend && uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
 
 ### Issue Management
 
-#### 5. Get Issues (with Pagination and Filtering)
+#### 6. Get Issues (with Pagination and Filtering)
 **GET** `/api/issues/{project_key}`
 
 **Query Parameters:**
@@ -121,7 +149,7 @@ cd backend && uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
 }
 ```
 
-#### 6. Get Issue Details with Subtasks and Progress
+#### 7. Get Issue Details with Subtasks and Progress
 **GET** `/api/issue/{issue_key}`
 
 **Example:** `GET /api/issue/PROJ-123`
@@ -180,38 +208,43 @@ cd backend && uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
 
 ### Ticket Creation
 
-#### 7. Create Ticket (Bug or Feature/Story)
+#### 8. Create Ticket (Bug or Feature/Story)
 **POST** `/api/create-ticket/{project_key}`
 
-**Request Body:**
+**Request Body (using issue type object - recommended):**
 ```json
 {
   "summary": "Fix login button not working on mobile",
   "description": "The login button is not responsive on mobile devices. Users cannot tap it to log in.",
-  "issue_type": "Bug",
+  "issue_type": {
+    "id": "10001",
+    "name": "Bug"
+  },
   "priority": "High",
   "assignee": "john.doe@company.com",
   "due_date": "2024-02-15",
   "story_points": 5,
   "epic_link": "PROJ-100",
   "components": ["Frontend", "Mobile"],
-  "labels": ["mobile", "urgent"]
+  "labels": ["mobile", "urgent"],
+  "backer": "creator@company.com"
 }
 ```
 
-**Request Body for Feature (Story):**
+**Request Body (using issue type string - legacy):**
 ```json
 {
   "summary": "Add dark mode support",
   "description": "Implement dark mode theme for better user experience",
-  "issue_type": "Feature",
+  "issue_type": "Story",
   "priority": "Medium",
   "assignee": "jane.smith@company.com",
   "due_date": "2024-03-01",
   "story_points": 8,
   "epic_link": "PROJ-200",
   "components": ["Frontend", "UI"],
-  "labels": ["enhancement", "ui"]
+  "labels": ["enhancement", "ui"],
+  "backer": "creator@company.com"
 }
 ```
 
@@ -227,7 +260,7 @@ cd backend && uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
 
 ### Backers Management
 
-#### 8. Add Backers to Issue
+#### 9. Add Backers to Issue
 **POST** `/api/issue/{issue_key}/add-backers`
 
 **Request Body (single email):**
