@@ -9,6 +9,7 @@ export interface JiraIssue {
   start_date: string | null;
   due_date: string | null;
   description: string | null;
+  backers?: string[];
 }
 
 export interface PaginatedResponse {
