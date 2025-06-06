@@ -362,15 +362,15 @@ const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
               help="Upload up to 3 files (max 5MB each)"
             >
               <Upload.Dragger {...uploadProps}>
-                <p className="ant-upload-drag-icon">
-                  <InboxOutlined />
-                </p>
-                <p className="ant-upload-text">
-                  Click or drag files to this area to upload
-                </p>
-                <p className="ant-upload-hint">
-                  Support for images, PDFs, documents. Maximum 3 files, 5MB each.
-                </p>
+                <Space direction={'vertical'} size={4} align="center">
+                    <InboxOutlined size={96} />
+                  <Text className="ant-upload-text">
+                    Click or drag files to this area to upload
+                  </Text>
+                  <Text type={'secondary'} className="ant-upload-hint">
+                    Attach images, PDFs, documents. Maximum 3 files, 5MB each.
+                  </Text>
+                </Space>
               </Upload.Dragger>
             </Form.Item>
           </>
