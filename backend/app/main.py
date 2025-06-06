@@ -324,7 +324,10 @@ async def get_project_issue_types(project_key: str):
 @app.post("/api/create-ticket/{project_key}")
 async def create_ticket(
     project_key: str,
-    ticket_data: str = Form(...),
+    summary: str = Form(...),
+    description: str = Form(""),
+    issue_type: str = Form(...),
+    backer: str = Form(...),
     attachments: List[UploadFile] = File(default=[])
 ):
     jira = get_jira_client()
@@ -333,11 +336,20 @@ async def create_ticket(
     DEFAULT_REPORTER_EMAIL = "jira.automation@bizongo.com"
 
     try:
-        # Parse the JSON ticket data from form
+        # Parse the JSON fields from form
         try:
-            request = json.loads(ticket_data)
+            issue_type_data = json.loads(issue_type)
+            backer_data = json.loads(backer)
         except json.JSONDecodeError:
-            raise HTTPException(status_code=400, detail="Invalid JSON in ticket_data")
+            raise HTTPException(status_code=400, detail="Invalid JSON in issue_type or backer fields")
+
+        # Create request object to match existing logic
+        request = {
+            'summary': summary,
+            'description': description,
+            'issue_type': issue_type_data,
+            'backer': backer_data
+        }
 
         # Get current user to set as first backer
         first_backer = request.get('backer')
